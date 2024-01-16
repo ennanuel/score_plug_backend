@@ -3,11 +3,11 @@ const Schema = mongoose.Schema
 
 const H2HSchema = Schema(
     {
-        _id: Number,
+        _id: String,
         resultSet: {
             count: Number,
-            first: Number,
-            last: Number
+            first: Date,
+            last: Date
         },
         aggregates: {
             numberOfMatches: Number,

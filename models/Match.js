@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema
+const Schema = mongoose.Schema;
+
+const RefereeSchema = Schema({
+    name: String,
+    type: String,
+    nationality: String
+});
 
 const matchSchema = Schema(
     {
@@ -13,22 +19,10 @@ const matchSchema = Schema(
         venue: String,
         isMain: Boolean,
         minute: String,
-        h2h: {
-            type: Schema.Types.ObjectId,
-            ref: 'H2H'
-        },
-        competition: {
-            type: Schema.Types.ObjectId,
-            ref: 'Competition'
-        },
-        homeTeam: {
-            type: Schema.Types.ObjectId,
-            ref: 'Team'
-        },
-        awayTeam: {
-            type: Schema.Types.ObjectId,
-            ref: 'Team'
-        },
+        competition: Number,
+        homeTeam: Number,
+        awayTeam: Number,
+        head2head: String,
         score: {
             winner: String,
             fullTime: {
@@ -40,18 +34,7 @@ const matchSchema = Schema(
                 away: Number
             }
         },
-        referees: [
-            {
-                name: String,
-                type: String,
-                nationality: String
-            }
-        ],
-        head2head: { 
-            type: Schema.Types.ObjectId,
-            ref: 'H2H',
-            default: null
-        }
+        referees: [RefereeSchema]
     },
     { timestamps: true }
 )
