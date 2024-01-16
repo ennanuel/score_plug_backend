@@ -2,13 +2,12 @@ const Competition = require('../../models/Competition');
 const Team = require('../../models/Team');
 const axios = require('axios');
 const { headers } = require('../../data');
-const { APICallsHandler } = require('../../utils/match');
+const { prepareForBulkWrite, fetchHandler, delay } = require('../../utils/match');
+const Player = require('../../models/Player');
 
 const ONE_DAY_IN_MS = 86400000;
 
 const getYesterdayDate = () => new Date((new Date()).getTime() - ONE_DAY_IN_MS);
-
-const apiHandler = APICallsHandler(10000);
 
 const competitionHandler = () => new Promise(
     async function (resolve, reject) {
@@ -27,8 +26,8 @@ const getCompetitions = () => new Promise(
         try {
             let competitions = await Competition.find();
             if (competitions.length <= 0) {
-                const result = await axios.get(`${process.env.FOOTBALL_API_URL}/competitions`, { headers });
-                const newCompetitions = result.data.competitions.map(comp => ({ ...comp, _id: comp.id }));
+                const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions`);
+                const newCompetitions = result.competitions.map(comp => ({ ...comp, _id: comp.id }));
                 competitions = await Competition.insertMany(newCompetitions);
             };
             resolve(competitions);
@@ -42,10 +41,7 @@ const updateCompetitionDetails = (competitions) => new Promise(
     async function (resolve, reject) {
         try {
             const outdatedCompetitions = competitions.filter(filterCompWithUpToDateData);
-            const preparedCompetitions = outdatedCompetitions.map(prepareCompetitionForUpdate);
-            const competitionsToUpdate = await Promise.all(preparedCompetitions);
-            const filteredCompetitions = competitionsToUpdate.filter(competition => competition);
-            await Promise.all(filteredCompetitions);
+            await prepareCompetitionForUpdate(outdatedCompetitions);
             resolve();
         } catch (error) {
             reject(error);
@@ -53,19 +49,23 @@ const updateCompetitionDetails = (competitions) => new Promise(
     }
 );
 
-const prepareCompetitionForUpdate = (competition) => new Promise(
+const prepareCompetitionForUpdate = (competitions) => new Promise(
     async function (resolve, reject) {
         try {
-            const { name, emblem, currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
-            if (lastUpdated == competition._doc.lastUpdated) resolve(null);
-            const standings = await getCompetitionStandings(competition._doc._id);
-            const updateData = { standings, name, emblem, currentSeason };
-            const shouldUpdateTeams = competition._doc.startDate !== currentSeason.startDate || competition._doc.teams.length <= 0;
-            if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._doc._id);
-            console.log('%s competition updated', competition._doc.name);
-            resolve(Competition.findByIdAndUpdate(competition._doc._id, { $set: updateData }));
+            for (let competition of competitions) {
+                const { name, emblem, currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
+                if (lastUpdated == competition._doc.lastUpdated) resolve(null);
+                const standings = await getCompetitionStandings(competition._doc._id);
+                const updateData = { standings, name, emblem, currentSeason };
+                const shouldUpdateTeams = competition._doc.startDate !== currentSeason.startDate || competition._doc.teams.length <= 0;
+                if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._doc._id);
+                console.log('%s competition updated', competition._doc.name);
+                await Competition.findByIdAndUpdate(competition._doc._id, { $set: updateData });
+                await delay(20000);
+            }
+            resolve();
         } catch (error) {
-            reject(error);
+            reject(error)
         }
     }
 );
@@ -73,10 +73,10 @@ const prepareCompetitionForUpdate = (competition) => new Promise(
 const getCompetitionData = (competitionCode) => new Promise(
     async function (resolve, reject) {
         try {
-            await apiHandler.start();
-            const result = await axios.get(`${process.env.FOOTBALL_API_URL}/competitions/${competitionCode}`, { headers });
-            apiHandler.restart();
-            resolve(result.data)
+            console.log('getting competition data...');
+            const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions/${competitionCode}`);
+            console.log('data fetch successful!');
+            resolve(result);
         } catch (error) {
             reject(error);
         }
@@ -86,10 +86,10 @@ const getCompetitionData = (competitionCode) => new Promise(
 const getCompetitionStandings = (competitionId) => new Promise(
     async function (resolve, reject) {
         try {
-            await apiHandler.start();
-            const result = await axios.get(`${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/standings`, { headers });
-            apiHandler.restart();
-            resolve(result.data.standings)
+            console.log('getting competition standings...');
+            const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/standings`);
+            console.log('standings fetch successful!')
+            resolve(result.standings)
         } catch (error) {
             reject(error);
         }
@@ -99,10 +99,14 @@ const getCompetitionStandings = (competitionId) => new Promise(
 const updateCompetitionTeams = (competitionId) => new Promise(
     async function (resolve, reject) {
         try {
-            const teamResult = await axios.get(`${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/teams`, { headers });
-            const teamsToUpdate = teamResult.data.teams.map(team => prepareTeamForBulkWrite({ _id: team.id, ...team }));
-            await Team.bulkWrite(teamsToUpdate);
-            const teamIds = teamsToUpdate.map(team => team._id);
+            console.log('getting competition teams...');
+            const teamResult = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/teams`);
+            const competitionTeams = teamResult.teams;
+            const teamsToUpdate = competitionTeams.map(saveTeamPlayers);
+            const updatedTeams = await Promise.all(teamsToUpdate);
+            console.log(updatedTeams.length, updatedTeams.filter(team => !team).length);
+            const teamIds = updatedTeams.map(team => team._id);
+            console.log('team fetch successful!')
             resolve(teamIds);
         } catch (error) {
             reject(error);
@@ -110,14 +114,16 @@ const updateCompetitionTeams = (competitionId) => new Promise(
     }
 );
 
-const prepareTeamForBulkWrite = (team) => ({
-    ...team,
-    updateOne: {
-        filter: { _id: team._id },
-        update: { team },
-        upsert: true
+async function saveTeamPlayers (team, i) {
+    try {
+        const players = team.squad.map(player => prepareForBulkWrite({ ...player, _id: player.id }));
+        await Player.bulkWrite(players);
+        const squad = players.map(player => player._id);
+        return Team.findOneAndUpdate({ _id: team.id }, { $set: { ...team, _id: team.id, squad } }, { new: true, upsert: true });
+    } catch (error) {
+        throw error;
     }
-});
+};
 
 const filterCompWithUpToDateData = (competition) => {
     const lastUpdatedCompetition = (new Date(competition._doc.updatedAt)).getTime();
