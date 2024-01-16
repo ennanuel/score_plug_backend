@@ -57,7 +57,8 @@ const compRanking = [
         name: 'Brazil Serie A',
         code: 'BSA'
     },
-]
+];
 
+const THREE_DAYS_IN_MS = 259200000;
 
-module.exports = { headers, compRanking }
+module.exports = { headers, compRanking, THREE_DAYS_IN_MS }
