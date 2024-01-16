@@ -25,14 +25,14 @@ const deleteRedundantMatches = () => new Promise(
     }
 );
 
-const getExpiredMatches = () => Match.find({ isMain: true, utcDate: { lt: getDateFrom().toLocaleDateString() } }).lean();
+const getExpiredMatches = () => Match.find({ isMain: true, utcDate: { $lt: getDateFrom().toDateString() } }).lean();
 
 async function getAllH2HAndPreviousMatchIds(matches) {
     const matchesH2H = matches.map(({ h2h }) => h2h);
     const homeTeamIds = matches.map(({ homeTeam }) => homeTeam);
     const awayTeamIds = matches.map(({ awayTeam }) => awayTeam);
-    const h2hs = await H2H.find({ $not: { _id: { $in: matchesH2H } } }).lean();
-    const teams = await Team.find({ $or: [{ $not: { _id: { $in: homeTeamIds } } }, { $not: { _id: { $in: awayTeamIds } } }] }).lean();
+    const h2hs = await H2H.find({ _id: { $not: { $in: matchesH2H } } }).lean();
+    const teams = await Team.find({ $or: [{ _id: { $not: { $in: homeTeamIds } } }, { _id: { $not: { $in: awayTeamIds } } }] }).lean();
     const teamMatchIds = teams.reduce(reduceMatchId, []);
     const h2hMatchIds = h2hs.reduce(reduceMatchId, []);
     return { teamMatchIds, h2hMatchIds };
@@ -52,9 +52,9 @@ async function checkIrrelevantMatches({ teamMatchIds, h2hMatchIds, matches }) {
 };
 
 async function deleteH2HAndMatches(irrelevantMatch) {
-    const h2h = await Match.findOne({ _id: { $ne: irrelevantMatch._id }, h2h: irrelevantMatch.h2h, isMain: true });
+    const h2h = await Match.findOne({ _id: { "$ne": irrelevantMatch._id }, h2h: irrelevantMatch.h2h, isMain: true });
     if (!h2h) return;
-    await H2H.findAndDelete({ _id: irrelevantMatch.h2h });
+    await H2H.deleteMany({ _id: irrelevantMatch.h2h });
 };
 
 async function deleteMatches() {
@@ -63,7 +63,7 @@ async function deleteMatches() {
     const teamMatches = teams.reduce(reduceMatchId, []);
     const h2hMatches = h2hs.reduce(reduceMatchId, []);
     const allRelevantMatches = [...teamMatches, ...h2hMatches];
-    return Match.findAndDelete({ $not: { _id: { $in: allRelevantMatches } } });
+    return Match.deleteMany({ _id: { $not: { $in: allRelevantMatches } } });
 };
 
 async function updateTeamPreviousMatches(matchId) {
