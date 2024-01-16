@@ -1,5 +1,7 @@
 const Match = require('../models/Match');
 const H2H = require('../models/H2H');
+const axios = require('axios');
+const { headers } = require('../data');
 
 const VALID_FILTER_RGX = /(in_play|timed|finished)/i;
 const ONE_DAY_IN_MS = 86400000;
@@ -65,30 +67,20 @@ function joinH2HandMatches({ head2headMatches, previousMatches, matchesHeadToHea
     return joinedH2Hs;
 };
 
-const APICallsHandler = (delayInMilliseconds = 20000) => {
-    var started = false;
-    var delay = (resolve, reject) => {
-        var timeStarted = Date.now();
-        var interval = setInterval(() => {
-            var pastOneMinute = (Date.now() - timeStarted) > 60000;
-            if (started) return;
-            else if (pastOneMinute) reject(new Error('API request taking too long'));
-            started = true;
-            clearInterval(interval);
-            resolve();
-        }, delayInMilliseconds);
-    };
-    const startCoolDown = () => new Promise(delay);
-    const endCoolDown = () => {
-        started = false;
-        timeStarted = Date.now();
-    };
-    var actions = {
-        start: startCoolDown,
-        restart: endCoolDown
-    };
-    return actions;
-};
+const fetchHandler = (url) => new Promise(
+    async function (resolve, reject) {
+        try {
+            const result = await axios.get(url, { headers });
+            resolve(result.data);
+        } catch (error) {
+            reject(error.response.data);
+        }
+    }
+);
+
+// There is a limit to how many times I can the API I use, so this is like a cool down;
+
+const delay = (delayInMs = 10000) => new Promise(resolve => setTimeout(resolve, delayInMs));
 
 const prepareForBulkWrite = (doc) => ({
     ...doc,
@@ -99,7 +91,10 @@ const prepareForBulkWrite = (doc) => ({
     }
 });
 
+const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
+
 module.exports = {
+    delay,
     updateMatchStatusAndScore,
     getFromToDates,
     createMatchFilterRegExp,
@@ -109,6 +104,7 @@ module.exports = {
     expandH2HMatches,
     joinH2HandMatches,
     createObjectWithIdAsKeys,
-    APICallsHandler,
-    prepareForBulkWrite
+    fetchHandler,
+    prepareForBulkWrite,
+    convertToTimeNumber
 }
