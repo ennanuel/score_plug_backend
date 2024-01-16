@@ -1,73 +1,82 @@
-const axios = require('axios');
 const Match = require('../../models/Match')
 const Team = require('../../models/Team');
 const Player = require('../../models/Player');
 const Competition = require('../../models/Competition');
-const { APICallsHandler, prepareForBulkWrite } = require('../../utils/match');
-
-const { headers } = require('../../data');
+const { fetchHandler, prepareForBulkWrite, convertToTimeNumber } = require('../../utils/match');
 
 const THREE_DAYS_IN_MS = 259200000;
 
-const getDateFrom = () => (new Date('01/01/2022')).toLocaleDateString();
+const getDateFrom = () => (new Date('01/01/2023')).toLocaleDateString();
 const getDateTo = () => (new Date((new Date()).getTime() + THREE_DAYS_IN_MS)).toLocaleDateString();
+const getTodayDate = () => (new Date).toLocaleDateString();
 
 function getDateFilters() {
     const [fromMonth, fromDay, fromYear] = getDateFrom().split('/');
     const [toMonth, toDay, toYear] = getDateTo().split('/');
-    const dateFrom = `${fromYear}-${fromMonth}-${fromDay}`;
-    const dateTo = `${toYear}-${toMonth}-${toDay}`;
+    const dateFrom = `${fromYear}-${convertToTimeNumber(fromMonth)}-${convertToTimeNumber(fromDay)}`;
+    const dateTo = `${toYear}-${convertToTimeNumber(toMonth)}-${convertToTimeNumber(toDay)}`;
     return { dateFrom, dateTo };
 };
-
-const apiHandler = APICallsHandler(20000);
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
         try {
-            const teams = await Team.find({ $expr: { $lte: [{ $size: '$squad' }, 0] } }, 'name _id').lean();
-            if (teams.length < 1) resolve();
-            const teamsToUpdate = await Promise.all(teams.map(updateTeams));
-            await Promise.all(teamsToUpdate);
+            await getAndUpdateTeams();
             await deleteIrrelevantTeams();
             await deleteIrrelevantPlayers();
             resolve();
         } catch (error) {
-            console.error(error.message);
             reject(error);
         }
     }
 );
 
-const updateTeams = (team) => new Promise(
+const getAndUpdateTeams = () => new Promise(
     async function (resolve, reject) {
         try {
-            console.log('Updating Team: %s ...', team._id);
-            const { teamDetails, teamMatchesDetails } = await getTeamDetails(team._id);
-            const { squad, ...otherTeamDetails } = teamDetails;
-            const { wins, draws, losses, played, matches } = teamMatchesDetails;
-            const savedMatchesIds = await saveTeamMatches(matches);
-            const savedPlayersIds = await saveTeamPlayers(squad);
-            const updateData = { ...otherTeamDetails, wins, draws, losses, played, matches: savedMatchesIds, squad: savedPlayersIds };
-            console.log('%s team prepared', teamDetails.name);
-            resolve(Team.findByIdAndUpdate(team._id, { $set: updateData }));
+            const todayDate = getTodayDate();
+            const recentlyUpdatedMatches = await Match.find({ updatedAt: { $gte: todayDate } }, 'homeTeam awayTeam').lean();
+            const matchTeamIds = recentlyUpdatedMatches.reduce(resolvematchesToJustIds, []);
+            const teams = await Team.find({ $or: [{ _id: { $in: matchTeamIds } }, { updatedAt: { $gte: todayDate } }] }).lean();
+            await updateTeams(teams);
+            resolve();
         } catch (error) {
             reject(error);
         }
     }
 );
 
-const getTeamDetails = (teamId) => new Promise(
+function resolvematchesToJustIds(matchIds, match) {
+    const filteredMatchIds = matchIds.filter(matchId => matchId !== match.homeTeam && matchId !== match.awayTeam);
+    return [...filteredMatchIds, match.homeTeam, match.awayTeam]
+}
+
+const updateTeams = (teams) => new Promise(
     async function (resolve, reject) {
         try {
-            await apiHandler.start();
+            for (let team of teams) {
+                console.log('Updating Team: %s ...', team._id);
+                const { wins, draws, losses, played, matches } = await getTeamMatchDetails(team._id);
+                const savedMatchesIds = await saveTeamMatches(matches);
+                const updateData = { wins, draws, losses, played, matches: savedMatchesIds };
+                await Team.findByIdAndUpdate(team._id, { $set: updateData });
+                await delay();
+            }
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    }
+);
+
+const getTeamMatchDetails = (teamId) => new Promise(
+    async function (resolve, reject) {
+        try {
             const { dateFrom, dateTo } = getDateFilters();
-            const teamDetailsResult = await axios.get(`${process.env.FOOTBALL_API_URL}/teams/${teamId}`, { headers });
-            const teamMatchesResult = await axios.get(`${process.env.FOOTBALL_API_URL}/teams/${teamId}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`, { headers });
-            apiHandler.restart();
-            const result = { teamMatchesDetails: teamMatchesResult.data, teamDetails: teamDetailsResult.data };
-            console.log(result.teamDetails.name);
-            resolve(result);
+            const url = `${process.env.FOOTBALL_API_URL}/teams/${teamId}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
+            const teamMatchesResult = await fetchHandler(url);
+            console.log('matches fetched!');
+            resolve(teamMatchesResult);
         } catch (error) {
             reject(error);
         }
@@ -82,20 +91,6 @@ const saveTeamMatches = (matches) => new Promise(
             await Match.bulkWrite(preparedMatches);
             const matchesIds = preparedMatches.map(match => match._id);
             resolve(matchesIds);
-        } catch (error) {
-            reject(error);
-        }
-    }
-);
-
-const saveTeamPlayers = (players) => new Promise(
-    async function (resolve, reject) {
-        try {
-            const teamPlayers = players.map(player => ({ ...player, _id: player.id }));
-            const preparedPlayers = teamPlayers.map(prepareForBulkWrite);
-            await Player.bulkWrite(preparedPlayers);
-            const savedPlayersIds = preparedPlayers.map(player => player._id);
-            resolve(savedPlayersIds);
         } catch (error) {
             reject(error);
         }
