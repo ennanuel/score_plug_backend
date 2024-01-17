@@ -112,7 +112,7 @@ function reduceToH2HDetails(H2HDetails, match) {
     homeTeam = { ...homeTeam, [homeTeamKey]: homeTeam[homeTeamKey] + 1 };
     awayTeam = { ...awayTeam, [awayTeamKey]: awayTeam[awayTeamKey] + 1 };
     return { numberOfMatches, totalGoals, homeTeam, awayTeam };
-}
+};
         
 const convertObjectIdToString = (objectId) => objectId;
 const reduceMatchId = (matchIds, { matches }) => [...matchIds, ...matches];
