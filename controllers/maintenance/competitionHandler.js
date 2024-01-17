@@ -1,7 +1,5 @@
 const Competition = require('../../models/Competition');
 const Team = require('../../models/Team');
-const axios = require('axios');
-const { headers } = require('../../data');
 const { prepareForBulkWrite, fetchHandler, delay } = require('../../utils/match');
 const Player = require('../../models/Player');
 
@@ -27,7 +25,7 @@ const getCompetitions = () => new Promise(
             let competitions = await Competition.find();
             if (competitions.length <= 0) {
                 const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions`);
-                const newCompetitions = result.competitions.map(comp => ({ ...comp, _id: comp.id }));
+                const newCompetitions = result.competitions.map(comp => ({ ...comp, _id: comp.id, currentSeason: { ...comp.currentSeason, winner: comp.currentSeason.winner?.id } }));
                 competitions = await Competition.insertMany(newCompetitions);
             };
             resolve(competitions);
@@ -56,7 +54,8 @@ const prepareCompetitionForUpdate = (competitions) => new Promise(
                 const { name, emblem, currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
                 if (lastUpdated == competition._doc.lastUpdated) resolve(null);
                 const standings = await getCompetitionStandings(competition._doc._id);
-                const updateData = { standings, name, emblem, currentSeason };
+                const competitionWinnerId = currentSeason.winner?.id;
+                const updateData = { standings, name, emblem, currentSeason: { ...currentSeason, winner: competitionWinnerId } };
                 const shouldUpdateTeams = competition._doc.startDate !== currentSeason.startDate || competition._doc.teams.length <= 0;
                 if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._doc._id);
                 console.log('%s competition updated', competition._doc.name);
@@ -104,7 +103,6 @@ const updateCompetitionTeams = (competitionId) => new Promise(
             const competitionTeams = teamResult.teams;
             const teamsToUpdate = competitionTeams.map(saveTeamPlayers);
             const updatedTeams = await Promise.all(teamsToUpdate);
-            console.log(updatedTeams.length, updatedTeams.filter(team => !team).length);
             const teamIds = updatedTeams.map(team => team._id);
             console.log('team fetch successful!')
             resolve(teamIds);
