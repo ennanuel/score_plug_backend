@@ -2,65 +2,30 @@ const Match = require('../../models/Match')
 const Team = require('../../models/Team');
 const Player = require('../../models/Player');
 const Competition = require('../../models/Competition');
-const { fetchHandler, prepareForBulkWrite, convertToTimeNumber } = require('../../utils/match');
-
-const THREE_DAYS_IN_MS = 259200000;
-
-const getDateFrom = () => (new Date('01/01/2023')).toLocaleDateString();
-const getDateTo = () => (new Date((new Date()).getTime() + THREE_DAYS_IN_MS)).toLocaleDateString();
-const getTodayDate = () => (new Date).toLocaleDateString();
-
-function getDateFilters() {
-    const [fromMonth, fromDay, fromYear] = getDateFrom().split('/');
-    const [toMonth, toDay, toYear] = getDateTo().split('/');
-    const dateFrom = `${fromYear}-${convertToTimeNumber(fromMonth)}-${convertToTimeNumber(fromDay)}`;
-    const dateTo = `${toYear}-${convertToTimeNumber(toMonth)}-${convertToTimeNumber(toDay)}`;
-    return { dateFrom, dateTo };
-};
+const { fetchHandler, prepareForBulkWrite, delay } = require('../../utils/match');
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
         try {
-            await getAndUpdateTeams();
-            await deleteIrrelevantTeams();
+            await handleTeamPreviousMatches();
             await deleteIrrelevantPlayers();
+            await deleteIrrelevantTeams();
+            await deleteIrrelevantPreviousMatches();
             resolve();
         } catch (error) {
             reject(error);
         }
     }
-);
+)
 
-const getAndUpdateTeams = () => new Promise(
+const handleTeamPreviousMatches = () => new Promise(
     async function (resolve, reject) {
         try {
-            const todayDate = getTodayDate();
-            const recentlyUpdatedMatches = await Match.find({ updatedAt: { $gte: todayDate } }, 'homeTeam awayTeam').lean();
-            const matchTeamIds = recentlyUpdatedMatches.reduce(resolvematchesToJustIds, []);
-            const teams = await Team.find({ $or: [{ _id: { $in: matchTeamIds } }, { updatedAt: { $gte: todayDate } }] }).lean();
-            await updateTeams(teams);
-            resolve();
-        } catch (error) {
-            reject(error);
-        }
-    }
-);
-
-function resolvematchesToJustIds(matchIds, match) {
-    const filteredMatchIds = matchIds.filter(matchId => matchId !== match.homeTeam && matchId !== match.awayTeam);
-    return [...filteredMatchIds, match.homeTeam, match.awayTeam]
-}
-
-const updateTeams = (teams) => new Promise(
-    async function (resolve, reject) {
-        try {
-            for (let team of teams) {
-                console.log('Updating Team: %s ...', team._id);
-                const { wins, draws, losses, played, matches } = await getTeamMatchDetails(team._id);
-                const savedMatchesIds = await saveTeamMatches(matches);
-                const updateData = { wins, draws, losses, played, matches: savedMatchesIds };
-                await Team.findByIdAndUpdate(team._id, { $set: updateData });
-                await delay();
+            const competitions = await Competition.find().lean();
+            for (let competition of competitions) {
+                const matches = await getCompetitionMatches(competition);
+                const matchesToSave = matches.map(prepareForBulkWrite);
+                await Match.bulkWrite(matchesToSave);
             }
             resolve();
         } catch (error) {
@@ -69,28 +34,28 @@ const updateTeams = (teams) => new Promise(
     }
 );
 
-const getTeamMatchDetails = (teamId) => new Promise(
-    async function (resolve, reject) {
-        try {
-            const { dateFrom, dateTo } = getDateFilters();
-            const url = `${process.env.FOOTBALL_API_URL}/teams/${teamId}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
-            const teamMatchesResult = await fetchHandler(url);
-            console.log('matches fetched!');
-            resolve(teamMatchesResult);
-        } catch (error) {
-            reject(error);
-        }
-    }
-);
+const sortByDate = (itemA, itemB) => (new Date(itemA.utcDate)).getTime() - (new Date(itemB.utcDate)).getTime();
+const prepareMatchesForSave = ({ id, competition, homeTeam, awayTeam, ...match }) => ({ _id: id, competition: competition.id, homeTeam: homeTeam.id, awayTeam: awayTeam.id,  isPrevMatch: true, ...match });
 
-const saveTeamMatches = (matches) => new Promise(
+const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promise(
     async function (resolve, reject) {
         try {
-            const teamMatches = matches.map(refineMatch);
-            const preparedMatches = teamMatches.map(prepareForBulkWrite);
-            await Match.bulkWrite(preparedMatches);
-            const matchesIds = preparedMatches.map(match => match._id);
-            resolve(matchesIds);
+            console.log('fetching %s previous matches', name)
+            const result = [];
+            const stageFilter = type === 'CUP' ? '&stage=GROUP_STAGE' : '';
+            const { currentMatchday } = currentSeason;
+            for (let i = 1; i <= currentMatchday && i <= 5; i++) {
+                const matchDay = currentMatchday - i;
+                if (matchDay <= 0) continue;
+                const url = `${process.env.FOOTBALL_API_URL}/competitions/${_id}/matches?status=FINISHED&matchday=${matchDay}${stageFilter}&limit=50`;
+                const matchesResult = await fetchHandler(url);
+                const { matches } = matchesResult;
+                result.push(...matches);
+                await delay(10000);
+            }
+            const sortedResult = result.map(prepareMatchesForSave).sort(sortByDate);
+            console.log('Gotten %s previous matches', name)
+            resolve(sortedResult);
         } catch (error) {
             reject(error);
         }
@@ -100,15 +65,52 @@ const saveTeamMatches = (matches) => new Promise(
 async function deleteIrrelevantTeams() { 
     const competitions = await Competition.find().lean();
     const competitionTeams = competitions.reduce((a, b) => [...a, ...b.teams], []);
-    return Team.findAndDelete({ _id: { $not: { $in: competitionTeams } } });
+    return Team.deleteMany({ _id: { $not: { $in: competitionTeams } } });
 };
 
 async function deleteIrrelevantPlayers() { 
     const teams = await Team.find().lean();
     const teamPlayers = teams.reduce((a, b) => [...a, ...b.squad], []);
-    return Player.findAndDelete({ _id: { $not: { $in: teamPlayers } } });
+    return Player.deleteMany({ _id: { $not: { $in: teamPlayers } } });
 };
 
-const refineMatch = (match) => ({ ...match, _id: match.id, competition: match.competition.id, homeTeam: match.homeTeam.id, awayTeam: match.awayTeam.id });
+async function deleteIrrelevantPreviousMatches() {
+    const teams = await Team.find({}, { _id: 1 }).lean();
+    const matchIdsInArray = await Promise.all(teams.map(getTeamMatches));
+    const matchesWithTheirPositionForEachTeam = matchIdsInArray.reduce(reduceToObjectWithIdAsKey, {});
+    console.log(matchesWithTheirPositionForEachTeam);
+    // for (let [matchId, matchPositions] of Object.entries(matchesWithTheirPositionForEachTeam)) {
+    //     if (matchPositions.some(position => position < 4)) continue;
+    //     await Match.delete({ _id: matchId });
+    // }
+}
+
+function reduceToObjectWithIdAsKey(objectWithMatchIdsAsKeys, matchIds) {
+    const result = { ...objectWithMatchIdsAsKeys };
+    for (let i = 0; i < matchIds.length; i++) {
+        const matchId = matchIds[i];
+        if (result[matchId]) {
+            result[matchId] = [...result[matchId], i];
+        } else {
+            result[matchId] = [i];
+        }
+    }
+    return result;
+}
+
+async function getTeamMatches (team) {
+    const teamPrevMatches = await Match.find(
+        {
+            isPrevMatch: true,
+            isHead2Head: { $ne: true },
+            $or: [
+                { awayTeam: team._id },
+                { homeTeam: team._id }
+            ]
+        }
+    ).sort({ utcDate: -1 }).lean();
+    const prevMatchesIds = teamPrevMatches.map(match => match._id);
+    return prevMatchesIds;
+}
 
 module.exports = teamHandler;
