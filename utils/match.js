@@ -73,7 +73,7 @@ const fetchHandler = (url) => new Promise(
             const result = await axios.get(url, { headers });
             resolve(result.data);
         } catch (error) {
-            reject(error.response.data);
+            reject(error);
         }
     }
 );
