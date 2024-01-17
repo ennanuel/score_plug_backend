@@ -1,5 +1,3 @@
-const axios = require('axios');
-
 const Match = require('../../models/Match');
 const H2H = require('../../models/H2H');
 
@@ -122,6 +120,7 @@ const saveH2HMatches = (matches) => new Promise(
             const matchesToSave = matches.map(match => ({
                 ...match,
                 _id: match.id,
+                isHead2Head: true,
                 competition: match.competition.id,
                 homeTeam: match.homeTeam.id,
                 awayTeam: match.awayTeam.id,
