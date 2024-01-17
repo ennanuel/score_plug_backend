@@ -23,6 +23,8 @@ const matchSchema = Schema(
         homeTeam: Number,
         awayTeam: Number,
         head2head: String,
+        isHead2Head: Boolean,
+        isPrevMatch: Boolean,
         score: {
             winner: String,
             fullTime: {
