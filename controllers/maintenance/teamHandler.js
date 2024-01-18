@@ -41,26 +41,53 @@ const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promis
     async function (resolve, reject) {
         try {
             console.log('fetching %s previous matches', name)
-            const result = [];
-            const stageFilter = type === 'CUP' ? '&stage=GROUP_STAGE' : '';
             const { currentMatchday } = currentSeason;
-            for (let i = 1; i <= currentMatchday && i <= 5; i++) {
-                const matchDay = currentMatchday - i;
-                if (matchDay <= 0) continue;
-                const url = `${process.env.FOOTBALL_API_URL}/competitions/${_id}/matches?status=FINISHED&matchday=${matchDay}${stageFilter}&limit=50`;
-                const matchesResult = await fetchHandler(url);
-                const { matches } = matchesResult;
-                result.push(...matches);
-                await delay(10000);
-            }
-            const sortedResult = result.map(prepareMatchesForSave).sort(sortByDate);
-            console.log('Gotten %s previous matches', name)
+            const getMatches = type === 'CUP' ?
+                fetchMatchesForCupCompetition({ competitionId: _id, limit: 50 }) :
+                fetchMatchesForNormalCompetition({ competitionId: _id, currentMatchday, limit: 50 });
+            const matches = await getMatches;
+            const sortedResult = matches.map(prepareMatchesForSave).sort(sortByDate);
+            console.log('Gotten %s previous matches', name);
             resolve(sortedResult);
         } catch (error) {
             reject(error);
         }
     }
 );
+
+const fetchMatchesForNormalCompetition = ({ competitionId, currentMatchday, limit }) => new Promise(
+    async function (resolve, reject) {
+        try {
+            const result = []
+            for (let i = 1; i <= currentMatchday && i <= 5; i++) {
+                const matchDay = currentMatchday - i;
+                if (matchDay <= 0) continue;
+                const url = `${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/matches?status=FINISHED&matchday=${matchDay}&limit=${limit}`;
+                const matchResult = await fetchHandler(url);
+                const { matches } = matchResult;
+                result.push(...matches);
+                await delay(10000);
+            }
+            resolve(result)
+        } catch (error) {
+            reject(error);
+        }
+    }
+);
+
+const fetchMatchesForCupCompetition = ({ competitionId, limit }) => new Promise(
+    async function (resolve, reject) {
+        try {
+            const url = `${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/matches?status=FINISHED&stage=GROUP_STAGE&limit=${limit}`;
+            const matchResult = await fetchHandler(url);
+            const { matches } = matchResult;
+            await delay(10000);
+            resolve(matches);
+        } catch (error) {
+            reject(error);
+        }
+    }
+)
 
 async function deleteIrrelevantTeams() { 
     const competitions = await Competition.find().lean();
@@ -79,10 +106,10 @@ async function deleteIrrelevantPreviousMatches() {
     const matchIdsInArray = await Promise.all(teams.map(getTeamMatches));
     const matchesWithTheirPositionForEachTeam = matchIdsInArray.reduce(reduceToObjectWithIdAsKey, {});
     console.log(matchesWithTheirPositionForEachTeam);
-    // for (let [matchId, matchPositions] of Object.entries(matchesWithTheirPositionForEachTeam)) {
-    //     if (matchPositions.some(position => position < 4)) continue;
-    //     await Match.delete({ _id: matchId });
-    // }
+    for (let [matchId, matchPositions] of Object.entries(matchesWithTheirPositionForEachTeam)) {
+        if (matchPositions.some(position => position < 4)) continue;
+        await Match.deleteOne({ _id: matchId });
+    }
 }
 
 function reduceToObjectWithIdAsKey(objectWithMatchIdsAsKeys, matchIds) {
