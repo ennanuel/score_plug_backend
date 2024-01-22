@@ -25,7 +25,7 @@ app.use(
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
-app.use('/api/v2/maintenance', maintenanceRoute);
+app.use('/maintenance', maintenanceRoute);
 app.use('/api/v2/auth', authRoute);
 app.use('/api/v2/team', teamRoute);
 app.use('/api/v2/competition', compRoute);
