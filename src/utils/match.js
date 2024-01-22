@@ -1,10 +1,10 @@
-const Match = require('../models/Match');
 const H2H = require('../models/H2H');
-const axios = require('axios');
-const { headers } = require('../constants');
 
-const VALID_FILTER_RGX = /(in_play|timed|finished)/i;
-const ONE_DAY_IN_MS = 86400000;
+const { VALID_MATCH_STATUS_REGEX } = require("../constants");
+
+const { getDateFrom } = require("../helpers/getDate");
+const { reduceToObjectWithIdAsKey } = require('../helpers/reduce');
+
 
 function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
     const matchesToUpdate = [];
@@ -18,22 +18,11 @@ function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
     return matchesToUpdate;
 }
 
-function getFromToDates(from, to) {
-    let fromDate, toDate;
-    if (from) fromDate = new Date(from);
-    else fromDate = new Date();
-    if (to) toDate = new Date(to);
-    else toDate = getToDate(fromDate);
-    return { startDate: fromDate.toLocaleDateString(), endDate: toDate.toLocaleDateString() };
-}
-
-const getToDate = (date) => new Date(date.getTime() + ONE_DAY_IN_MS);
-
 function createMatchFilterRegExp(filter) {
     const filterIsInPlay = filter?.toLowerCase() === 'in_play';
     const filterValue = filterIsInPlay ? 'in_play|paused' : filter;
     const noFilter = '[a-z]'
-    const regExp = new RegExp(VALID_FILTER_RGX.test(filter) ? filterValue : noFilter, 'i');
+    const regExp = new RegExp(VALID_MATCH_STATUS_REGEX.test(filter) ? filterValue : noFilter, 'i');
     return regExp;
 };
 
@@ -41,18 +30,16 @@ async function getMatchesHead2Head(matches) {
     if (!matches) return []
     const matchesHead2HeadIds = matches.map(match => match.head2head);
     const H2Hs = await H2H.find({ _id: { $in: matchesHead2HeadIds } });
-    return H2H;
+    return H2Hs;
 };
 
 const expandAllPreviousMatches = (previousMatches, head2head) => [...previousMatches, ...head2head.aggregates.homeTeam.previousMatches, ...head2head.aggregates.awayTeam.previousMatches];
 
-const expandH2HMatches = (h2hMatches, head2head) => [...h2hMatches, ...head2head.matches];
-
-const createObjectWithIdAsKeys = (objectWithIds, object) => ({ ...objectWithIds, [object._id]: object });
+const expandH2HMatches = (head2headMatches, head2head) => [...head2headMatches, ...head2head.matches];
 
 function joinH2HandMatches({ head2headMatches, previousMatches, matchesHeadToHeads }) {
-    const reducedH2HMatches = head2headMatches.reduce(createObjectWithIdAsKeys, {});
-    const reducedPreviousMatches = previousMatches.reduce(createObjectWithIdAsKeys, {});
+    const reducedH2HMatches = head2headMatches.reduce(reduceToObjectWithIdAsKey, {});
+    const reducedPreviousMatches = previousMatches.reduce(reduceToObjectWithIdAsKey, {});
     const joinedH2Hs = [];
     for (let headToHead of matchesHeadToHeads) {
         const newH2H = { ...headToHead };
@@ -67,44 +54,14 @@ function joinH2HandMatches({ head2headMatches, previousMatches, matchesHeadToHea
     return joinedH2Hs;
 };
 
-const fetchHandler = (url) => new Promise(
-    async function (resolve, reject) {
-        try {
-            const result = await axios.get(url, { headers });
-            resolve(result.data);
-        } catch (error) {
-            reject(error);
-        }
-    }
-);
-
-// There is a limit to how many times I can the API I use, so this is like a cool down;
-
-const delay = (delayInMs = 10000) => new Promise(resolve => setTimeout(resolve, delayInMs));
-
-const prepareForBulkWrite = (doc) => ({
-    ...doc,
-    updateOne: {
-        filter: { _id: doc._id },
-        update: doc,
-        upsert: true
-    }
-});
-
-const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
+const checkIfIsMainMatch = (matchDate) => (new Date(matchDate)).getTime() >= (new Date(getDateFrom())).getTime();
 
 module.exports = {
-    delay,
     updateMatchStatusAndScore,
-    getFromToDates,
     createMatchFilterRegExp,
-    getFromToDates,
     getMatchesHead2Head,
     expandAllPreviousMatches,
     expandH2HMatches,
     joinH2HandMatches,
-    createObjectWithIdAsKeys,
-    fetchHandler,
-    prepareForBulkWrite,
-    convertToTimeNumber
+    checkIfIsMainMatch
 }
