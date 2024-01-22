@@ -4,13 +4,13 @@ const cors = require('cors')
 const bp = require('body-parser')
 const mongoose = require('mongoose')
 
-const authRoute = require('./routes/auth');
-const teamRoute = require('./routes/team');
-const compRoute = require('./routes/competition');
-const playerRoute = require('./routes/player');
-const matchRoute = require('./routes/match');
-const searchRoute = require('./routes/search');
-const maintenanceRoute = require('./routes/maintenance');
+const authRoute = require('./src/routes/auth');
+const teamRoute = require('./src/routes/team');
+const compRoute = require('./src/routes/competition');
+const playerRoute = require('./src/routes/player');
+const matchRoute = require('./src/routes/match');
+const searchRoute = require('./src/routes/search');
+const maintenanceRoute = require('./src/routes/maintenance');
 
 dotenv.config();
 
@@ -25,15 +25,15 @@ app.use(
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
-app.use('/maintenance', maintenanceRoute);
-app.use('/auth', authRoute);
-app.use('/team', teamRoute);
-app.use('/competition', compRoute);
-app.use('/player', playerRoute);
-app.use('/match', matchRoute);
-app.use('/search', searchRoute);
+app.use('/api/v2/maintenance', maintenanceRoute);
+app.use('/api/v2/auth', authRoute);
+app.use('/api/v2/team', teamRoute);
+app.use('/api/v2/competition', compRoute);
+app.use('/api/v2/player', playerRoute);
+app.use('/api/v2/match', matchRoute);
+app.use('/api/v2/search', searchRoute);
 
-const startServer = (port) => app.listen(port || 4000, () => console.log('Server running...'));
+const server = (port = 4000) => app.listen(port, () => console.log('Server running...'));
 
 mongoose.set('strictQuery', false);
 
@@ -42,5 +42,7 @@ mongoose
         useNewUrlParser: true,
         useUnifiedTopology: true
     })
-    .then(() => startServer(process.env.PORT))
+    .then(() => server(process.env.PORT))
     .catch((err) => console.log(err));
+
+module.exports = { app, server };
