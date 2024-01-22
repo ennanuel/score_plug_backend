@@ -1,0 +1,19 @@
+const fetchHandler = (url) => new Promise(
+    async function (resolve, reject) {
+        try {
+            const result = await axios.get(url, { headers });
+            resolve(result.data);
+        } catch (error) {
+            reject(error);
+        }
+    }
+);
+
+// There is a limit to how many times I can the API I use, so this is like a cool down;
+
+const delay = (delayInMs = 10000) => new Promise(resolve => setTimeout(resolve, delayInMs));
+
+module.exports = {
+    fetchHandler,
+    delay
+};
