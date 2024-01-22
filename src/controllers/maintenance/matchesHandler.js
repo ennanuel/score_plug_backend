@@ -1,22 +1,13 @@
-const Match = require('../../src/models/Match');
-const H2H = require('../../src/models/H2H');
+const Match = require('../../models/Match');
+const H2H = require('../../models/H2H');
 
-const { headers, THREE_DAYS_IN_MS } = require('../../src/constants');
 const deleteRedundantMatches = require('./deleteRedundantMatches');
-const { fetchHandler, prepareForBulkWrite, convertToTimeNumber, delay } = require('../../src/utils/match');
+const { fetchHandler, delay } = require('../../helpers/fetchHandler');
+const { prepareForBulkWrite } = require('../../helpers/mongoose');
 
-const getDateFrom = () => (new Date((new Date()).getTime() - THREE_DAYS_IN_MS)).toLocaleDateString();
-const getDateTo = () => (new Date((new Date()).getTime() + THREE_DAYS_IN_MS)).toLocaleDateString();
-
-function getDateFilters() {
-    const [fromMonth, fromDay, fromYear] = getDateFrom().split('/');
-    const [toMonth, toDay, toYear] = getDateTo().split('/');
-    const dateFrom = `${fromYear}-${convertToTimeNumber(fromMonth)}-${convertToTimeNumber(fromDay)}`;
-    const dateTo = `${toYear}-${convertToTimeNumber(toMonth)}-${convertToTimeNumber(toDay)}`;
-    return { dateFrom, dateTo };
-};
-
-const checkIfIsMainMatch = (matchDate) => (new Date(matchDate)).getTime() >= (new Date(getDateFrom())).getTime();
+const { getDateFilters } = require("../../helpers/getDate");
+const { refineMatchValues } = require("../../helpers/mongoose");
+const { checkIfIsMainMatch } = require("../../utils/match")
 
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {
@@ -38,7 +29,7 @@ const getMatchesToSave = () => new Promise(
         try {
             const { dateFrom, dateTo } = getDateFilters();
             const URL = `${process.env.FOOTBALL_API_URL}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`;
-            const matchesResult = await fetchHandler(URL, { headers });
+            const matchesResult = await fetchHandler(URL);
             const fetchedMatches = matchesResult.matches;
             const savedMatches = await Match.find({ isMain: true }, '_id').lean();
             const savedMatchesIds = savedMatches.map(match => match._id);
@@ -50,23 +41,15 @@ const getMatchesToSave = () => new Promise(
     }
 );
 
-const setMatchValues = ({ id, competition, homeTeam, awayTeam, ...match }) => ({
-    ...match,
-    _id: id,
-    competition: competition.id,
-    homeTeam: homeTeam.id,
-    awayTeam: awayTeam.id,
-    head2head: null,
-    isMain: true
-});
+const prepareMatchesForSave = ({ id, competition, homeTeam, awayTeam, ...match }) => ({ _id: id, competition: competition.id, homeTeam: homeTeam.id, awayTeam: awayTeam.id, isPrevMatch: true, ...match });
 
-const prepareMatchForUpload = (match) => Match.findOneAndUpdate({ _id: match._id }, { $set: match }, { new: true, upsert: true });
+const prepareMatchUpload = (match) => Match.findOneAndUpdate({ _id: match._id }, { $set: match }, { new: true, upsert: true });
 
 const saveMainMatches = (matches) => new Promise(
     async function (resolve, reject) {
         try {
-            const mainMatches = matches.map(setMatchValues);
-            const matchesToSave = mainMatches.map(prepareMatchForUpload);
+            const mainMatches = matches.map((match) => refineMatchValues({ ...match, isMain: true }));
+            const matchesToSave = mainMatches.map(prepareMatchUpload);
             await Promise.all(matchesToSave);
             resolve();
         } catch (error) {

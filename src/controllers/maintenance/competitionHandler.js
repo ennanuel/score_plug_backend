@@ -1,11 +1,9 @@
-const Competition = require('../../src/models/Competition');
-const Team = require('../../src/models/Team');
-const { prepareForBulkWrite, fetchHandler, delay } = require('../../src/utils/match');
-const Player = require('../../src/models/Player');
+const Competition = require('../../models/Competition');
+const Team = require('../../models/Team');
+const { prepareForBulkWrite, fetchHandler, delay } = require('../../utils/match');
+const Player = require('../../models/Player');
 
-const ONE_DAY_IN_MS = 86400000;
-
-const getYesterdayDate = () => new Date((new Date()).getTime() - ONE_DAY_IN_MS);
+const { getYesterdayDate } = require("../../helpers/getDate");
 
 const competitionHandler = () => new Promise(
     async function (resolve, reject) {
