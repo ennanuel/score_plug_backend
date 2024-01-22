@@ -59,6 +59,9 @@ const compRanking = [
     },
 ];
 
-const THREE_DAYS_IN_MS = 259200000;
+const VALID_MATCH_STATUS_REGEX = /(in_play|timed|finished)/i;
 
-module.exports = { headers, compRanking, THREE_DAYS_IN_MS }
+const THREE_DAYS_IN_MS = 259200000;
+const ONE_DAY_IN_MS = 86400000;
+
+module.exports = { headers, compRanking, THREE_DAYS_IN_MS, ONE_DAY_IN_MS, VALID_MATCH_STATUS_REGEX }
