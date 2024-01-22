@@ -1,14 +1,12 @@
 const axios = require('axios');
-const dotenv = require('dotenv');
-const Match = require('../src/models/Match');
+const Match = require('../models/Match');
+const Team = require('../models/Team');
+const H2H = require('../models/H2H');
 
-const { headers } = require('../src/constants');
+const { headers } = require('../constants');
 
-const { updateMatchDetails, createMatchFilterRegExp, getFromToDates, getMatchesHead2Head, expandAllPreviousMatches, expandH2HMatches, joinH2HandMatches, updateMatchStatusAndScore } = require('../src/utils/match');
-const Team = require('../src/models/Team');
-const H2H = require('../src/models/H2H');
-
-dotenv.config();
+const { getFromToDates } = require("../helpers/getDate")
+const { createMatchFilterRegExp, getMatchesHead2Head, expandAllPreviousMatches, expandH2HMatches, joinH2HandMatches, updateMatchStatusAndScore } = require('../utils/match');
 
 const API_URL = process.env.FOOTBALL_API_URL;
 
@@ -16,15 +14,22 @@ async function getMatchDetails(req, res) {
     try {
         const { matchId } = req.params;
         const match = await Match.findById(matchId).lean();
-        if (!match) throw new Erro('No matches found');
-        const teamIds = [match.homeTeam, match.awayTeam];
-        const teams = await Team.find({ _id: { $in: teamIds } }).lean();
-        const headToHead = await H2H.findById(match.h2h).lean();
+
+        if (!match) throw new Error('No matches found');
+
+        const matchTeamIds = [match.homeTeam, match.awayTeam];
+        const teams = await Team.find({ _id: { $in: matchTeamIds } }).lean();
         const [homeTeam, awayTeam] = teams.sort(team => team._id === match.homeTeam ? -1 : 1);
-        match.homeTeam = homeTeam;
-        match.awayTeam = awayTeam;
-        match.h2h = headToHead;
-        return res.stauts(200).json(match);
+        const homeTeamPreviousMatches = await Match.find({ $or: [{ homeTeam: match.homeTeam, awayTeam: match.homeTeam }] }).lean();
+        const awayTeamPreviousMatches = await Match.find({ $or: [{ homeTeam: match.awayTeam, awayTeam: match.awayTeam }] }).lean();
+        match.homeTeam = { ...homeTeam, previousMatches: homeTeamPreviousMatches };
+        match.awayTeam = { ...awayTeam, previousMatches: awayTeamPreviousMatches };
+        
+        const headToHead = await H2H.findById(match.head2head).lean();
+        const headToHeadMatches = await Match.find({ _id: { $in: headToHead.matches } }).lean();
+        match.head2head = { ...headToHead, matches: headToHeadMatches };
+
+        return res.status(200).json(match);
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -76,7 +81,7 @@ async function updateMatches (req, res) {
     try {
         const { from, to } = getFromToDates();
         const previousMatches = await Match.find({ utcDate: { $gte: from, $lt: to } });
-        const matchIds = matches.map(match => match._doc._id).join(',');
+        const matchIds = previousMatches.map(match => match._doc._id).join(',');
         const response = await axios.get(`${API_URL}/matches?ids=${matchIds}`, { headers });
         const currentMatches = response.data.matches;
         await Promise.all(updateMatchStatusAndScore({ previousMatches, currentMatches }));

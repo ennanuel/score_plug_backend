@@ -1,7 +1,7 @@
-const Competition = require("../src/models/Competition");
-const Match = require("../src/models/Match");
-const Team = require('../src/models/Team');
-const { reduceToActiveCompetitionsIds } = require("../src/utils/competition");
+const Competition = require("../models/Competition");
+const Match = require("../models/Match");
+const Team = require('../models/Team');
+const { reduceToActiveCompetitionsIds } = require("../utils/competition");
 
 const ONE_DAY_IN_MS = 86400000;
 
