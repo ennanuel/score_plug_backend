@@ -1,7 +1,10 @@
+const axios = require("axios");
+const { HEADERS } = require("../constants");
+
 const fetchHandler = (url) => new Promise(
     async function (resolve, reject) {
         try {
-            const result = await axios.get(url, { headers });
+            const result = await axios.get(url, { headers: HEADERS });
             resolve(result.data);
         } catch (error) {
             reject(error);
