@@ -3,7 +3,8 @@ const Team = require('../../models/Team');
 const Player = require('../../models/Player');
 const Competition = require('../../models/Competition');
 const { fetchHandler, delay } = require('../../helpers/fetchHandler');
-const { prepareForBulkWrite } = require('../../helpers/mongoose');
+const { prepareForBulkWrite, refineMatchValues } = require('../../helpers/mongoose');
+const { checkIfCompetitionHasEnded } = require('../../helpers/getDate');
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
@@ -36,18 +37,32 @@ const handleTeamPreviousMatches = () => new Promise(
 
 const sortByDate = (itemA, itemB) => (new Date(itemA.utcDate)).getTime() - (new Date(itemB.utcDate)).getTime();
 
+async function checkIfPreviousMatchesAlreadyExist({ competitionId, currentSeason }) {
+    const matches = await Match.find({ competition: competitionId, status: "FINISEHED", isPrevMatch: true }).lean();
+    const competitionHasEnded = checkIfCompetitionHasEnded(currentSeason.endDate);
+    const isValid = matches.length <= 0 || !competitionHasEnded;
+    return isValid;
+}
+
 const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promise(
     async function (resolve, reject) {
         try {
-            console.log('fetching %s previous matches', name)
-            const { currentMatchday } = currentSeason;
-            const getMatches = type === 'CUP' ?
-                fetchMatchesForCupCompetition({ competitionId: _id, limit: 50 }) :
-                fetchMatchesForNormalCompetition({ competitionId: _id, currentMatchday, limit: 50 });
-            const matches = await getMatches;
-            const sortedResult = matches.map(prepareMatchesForSave).sort(sortByDate);
-            console.log('Gotten %s previous matches', name);
-            resolve(sortedResult);
+            const result = [];
+            const shouldFetchCompetitionMatches = await checkIfPreviousMatchesAlreadyExist({ currentSeason, competitionId: _id });
+            if (shouldFetchCompetitionMatches) {
+                console.log('fetching %s previous matches', name);
+                const { currentMatchday } = currentSeason;
+                const getMatches = type === 'CUP' ?
+                    fetchMatchesForCupCompetition({ competitionId: _id, limit: 50 }) :
+                    fetchMatchesForNormalCompetition({ competitionId: _id, currentMatchday, limit: 50 });
+                const matches = await getMatches;
+                const sortedResult = matches
+                    .map((match) => refineMatchValues({ ...match, isPrevMatch: true }))
+                    .sort(sortByDate);
+                result.push(...sortedResult);
+                console.log('Gotten %s previous matches', name);
+            }
+            resolve(result);
         } catch (error) {
             reject(error);
         }
@@ -60,14 +75,19 @@ const fetchMatchesForNormalCompetition = ({ competitionId, currentMatchday, limi
             const result = []
             for (let i = 1; i <= currentMatchday && i <= 5; i++) {
                 const matchDay = currentMatchday - i;
-                if (matchDay <= 0) continue;
+                if (matchDay <= 0) break;
+                
+                const matchesFromMatchDay = await Match.find({ matchday: matchDay, competition: competitionId }).lean();
+                if (matchesFromMatchDay.length > 0) continue;
+
                 const url = `${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/matches?status=FINISHED&matchday=${matchDay}&limit=${limit}`;
                 const matchResult = await fetchHandler(url);
                 const { matches } = matchResult;
                 result.push(...matches);
+
                 await delay(10000);
             }
-            resolve(result)
+            resolve(result);
         } catch (error) {
             reject(error);
         }
