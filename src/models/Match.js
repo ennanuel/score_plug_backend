@@ -17,14 +17,23 @@ const matchSchema = Schema(
         group: String,
         lastUpdated: Date,
         venue: String,
-        isMain: Boolean,
+        isMain: {
+            type: Boolean,
+            default: false
+        },
+        isHead2Head: {
+            type: Boolean,
+            default: false
+        },
+        isPrevMatch: {
+            type: Boolean,
+            default: false
+        },
         minute: String,
         competition: Number,
         homeTeam: Number,
         awayTeam: Number,
         head2head: String,
-        isHead2Head: Boolean,
-        isPrevMatch: Boolean,
         score: {
             winner: String,
             fullTime: {
