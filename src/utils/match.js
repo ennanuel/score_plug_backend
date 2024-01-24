@@ -30,12 +30,12 @@ function createMatchFilterRegExp(filter) {
 
 async function getMatchTeams(match) {
     const matchTeamIds = [match.homeTeam, match.awayTeam];
-    const teams = await Team.find({ _id: { $in: matchTeamIds } }, '_id name shortName tla wins losses draws crest').lean();
+    const teams = await Team.find({ _id: { $in: matchTeamIds } }).lean();
     const [homeTeam, awayTeam] = teams.sort(team => team._id === match.homeTeam ? -1 : 1);
     return { homeTeam, awayTeam };
 };
 
-const getCompetition = (competitionId) => Competition.findById(competitionId, '_id name area type emblem').lean();
+const getCompetition = (competitionId) => Competition.findById(competitionId).lean();
 
 async function expandMatchTeamsAndCompetition(match) {
     const competition = await getCompetition(match.competition);
@@ -44,7 +44,7 @@ async function expandMatchTeamsAndCompetition(match) {
     return expandedMatch;
 };
 
-async function getMatchHead2Head(h2hId) {
+async function getMatchHead2Head(h2hId, includeMatches) {
     const head2head = await H2H.findById(h2hId).lean();
     const head2headMatches = await Match.find({ _id: { $in: head2head.matches } }).lean();
     head2head.matches = head2headMatches;
@@ -63,17 +63,17 @@ function arrangeHead2HeadTeams({ head2head, homeTeamId, awayTeamId }) {
     return arrangedHead2Head;
 }
 
-async function getMatchHead2HeadAndPreviousMatches(match) {
+async function getMatchHead2HeadAndPreviousMatches(match, includeMatches) {
     const matchHead2Head = await getMatchHead2Head(match.head2head);
     const arrangedHead2Head = arrangeHead2HeadTeams({ head2head: matchHead2Head, homeTeamId: match.homeTeam._id, awayTeamId: match.awayTeam._id });
 
     const homeTeamPreviousMatches = await Match.find({
-        isPreviousMatch: true,
-        $or: [{ homeTeam: match.homeTeam._id, awayTeam: match.homeTeam._id }],
+        $or: [{ homeTeam: match.homeTeam._id }, { awayTeam: match.homeTeam._id }],
+        isPrevMatch: true
     }).lean();
     const awayTeamPreviousMatches = await Match.find({
-        isPreviousMatch: true,
-        $or: [{ homeTeam: match.awayTeam._id, awayTeam: match.awayTeam._id }]
+        $or: [{ homeTeam: match.awayTeam._id }, { awayTeam: match.awayTeam._id }],
+        isPrevMatch: true
     }).lean();
 
     const result = { ...match, head2head: arrangedHead2Head };
@@ -84,7 +84,13 @@ async function getMatchHead2HeadAndPreviousMatches(match) {
     return result;
 };
 
-const calculateOutcomePercentage = ({ team1, team2, total }, [key1, key2]) => (((((team1.h2h[key1] + team2.h2h[key2]) * 2) + team1.prevMatches[key1] + team2.prevMatches[key2]) * 100) / total).toFixed(2);
+function calculateOutcomePercentage({ team1, team2, total }, [key1, key2]) {
+    const firstFactor = ((team1.h2h[key1] + team2.h2h[key2]) * 2);
+    const secondFactor = team1.prevMatches[key1] + team2.prevMatches[key2];
+    const totalFactors = firstFactor + secondFactor;
+    const outcomePercentage = ((totalFactors * 100) / total).toFixed(2);
+    return outcomePercentage;
+}
 
 function getMatchOutcome(match) {
     const totalMatchesPlayed = (match.head2head.aggregates.numberOfMatches * 4) + match.homeTeam.matchesPlayed + match.awayTeam.matchesPlayed;
@@ -92,7 +98,7 @@ function getMatchOutcome(match) {
     const awayTeam = { h2h: match.head2head.aggregates.awayTeam, prevMatches: match.awayTeam };
     const homeWinOutcome = calculateOutcomePercentage({ team1: homeTeam, team2: awayTeam, total: totalMatchesPlayed }, ['wins', 'losses']);
     const drawOutcome = calculateOutcomePercentage({ team1: homeTeam, team2: awayTeam, total: totalMatchesPlayed }, ['draws', 'draws']);
-    const awayWinOutcome = calculateOutcomePercentage({ team1: awayTeam, team2: homeTeam, total: totalMatchesPlayed }, ['wins', 'losses'])
+    const awayWinOutcome = calculateOutcomePercentage({ team1: awayTeam, team2: homeTeam, total: totalMatchesPlayed }, ['wins', 'losses']);
     const outcome = { homeWin: +homeWinOutcome, draw: +drawOutcome, awayWin: +awayWinOutcome };
     const matchWithOutcome = { ...match, outcome };
     return matchWithOutcome;
