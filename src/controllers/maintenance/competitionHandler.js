@@ -5,6 +5,7 @@ const { prepareForBulkWrite } = require("../../helpers/mongoose");
 const Player = require('../../models/Player');
 
 const { getYesterdayDate } = require("../../helpers/getDate");
+const { COMPETITION_RANKINGS } = require('../../constants');
 
 const competitionHandler = () => new Promise(
     async function (resolve, reject) {
@@ -18,6 +19,8 @@ const competitionHandler = () => new Promise(
     }
 );
 
+const changeCompetitionName = ({ name, code, ...competition }) => ({ ...competition, ...(COMPETITION_RANKINGS.find(comp => comp.code === code) || { name, code }) });
+
 const getCompetitions = () => new Promise(
     async function (resolve, reject) {
         try {
@@ -25,7 +28,8 @@ const getCompetitions = () => new Promise(
             if (competitions.length <= 0) {
                 const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions`);
                 const newCompetitions = result.competitions.map(comp => ({ ...comp, _id: comp.id, currentSeason: { ...comp.currentSeason, winner: comp.currentSeason.winner?.id } }));
-                competitions = await Competition.insertMany(newCompetitions);
+                const competitionsWithNewName = newCompetitions.map(changeCompetitionName);
+                competitions = await Competition.insertMany(competitionsWithNewName);
             };
             resolve(competitions);
         } catch (error) {
