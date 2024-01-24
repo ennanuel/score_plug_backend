@@ -3,7 +3,7 @@ const H2H = require('../../models/H2H');
 
 const deleteRedundantMatches = require('./deleteRedundantMatches');
 const { fetchHandler, delay } = require('../../helpers/fetchHandler');
-const { prepareForBulkWrite } = require('../../helpers/mongoose');
+const { prepareForBulkWrite, prepareMatchForUpload } = require('../../helpers/mongoose');
 
 const { getDateFilters } = require("../../helpers/getDate");
 const { refineMatchValues } = require("../../helpers/mongoose");
@@ -13,8 +13,10 @@ const matchesHandler = () => new Promise(
     async function (resolve, reject) {
         try {
             const matchesToSave = await getMatchesToSave();
+
             await saveMainMatches(matchesToSave);
             await handleMatchesWithoutHead2Head();
+
             console.log('Deleting irrelevant matches...');
             await deleteRedundantMatches();
             resolve();
@@ -41,15 +43,11 @@ const getMatchesToSave = () => new Promise(
     }
 );
 
-const prepareMatchesForSave = ({ id, competition, homeTeam, awayTeam, ...match }) => ({ _id: id, competition: competition.id, homeTeam: homeTeam.id, awayTeam: awayTeam.id, isPrevMatch: true, ...match });
-
-const prepareMatchUpload = (match) => Match.findOneAndUpdate({ _id: match._id }, { $set: match }, { new: true, upsert: true });
-
 const saveMainMatches = (matches) => new Promise(
     async function (resolve, reject) {
         try {
-            const mainMatches = matches.map((match) => refineMatchValues({ ...match, isMain: true }));
-            const matchesToSave = mainMatches.map(prepareMatchUpload);
+            const mainMatches = matches.map((match) => refineMatchValues({ ...match, isMain: true, head2head: null }));
+            const matchesToSave = mainMatches.map(prepareMatchForUpload);
             await Promise.all(matchesToSave);
             resolve();
         } catch (error) {
