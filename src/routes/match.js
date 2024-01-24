@@ -3,7 +3,7 @@ const { updateMatches, getAllMatches, getMatchPicks, getMatchDetails } = require
 
 router.get('/:matchId', getMatchDetails);
 router.get('/', getAllMatches);
-router.get('/picks/:from/:to', getMatchPicks);
+router.get('/prediction/outcomes', getMatchPicks);
 router.put('/update', updateMatches);
 
 module.exports = router
