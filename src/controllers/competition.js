@@ -1,12 +1,7 @@
+const { getFromToDates } = require("../helpers/getDate");
 const Competition = require("../models/Competition");
 const Match = require("../models/Match");
-const Team = require('../models/Team');
 const { reduceToActiveCompetitionsIds } = require("../utils/competition");
-
-const ONE_DAY_IN_MS = 86400000;
-
-const getTodayDate = () => (new Date()).toLocaleDateString();
-const getTomorrowDate = () => (new Date((new Date()).getTime() + ONE_DAY_IN_MS)).toLocaleDateString();
 
 async function getAllCompetitions(req, res) {
     try {
@@ -20,11 +15,14 @@ async function getAllCompetitions(req, res) {
 
 async function getActiveCompetitions(req, res) {
     try {
-        const today = getTodayDate();
-        const tomorrow = getTomorrowDate();
-        const activeMatches = await Match.find({ utcDate: { gte: today, lt: tomorrow } }, '_id').lean();
+        const { from, to } = req.query;
+        const { dateFrom, dateTo } = getFromToDates(from, to);
+
+        const activeMatches = await Match.find({ utcDate: { gte: dateFrom, lt: dateTo } }, '_id').lean();
         const activeCompetitionIds = activeMatches.reduce(reduceToActiveCompetitionsIds, []);
+
         const activeCompetitions = await Competition.find({ _id: { $in: activeCompetitionIds } });
+
         return res.status(200).json(activeCompetitions);
     } catch (error) {
         console.error(error.message);
@@ -37,10 +35,6 @@ async function getCompetitionDetails(req, res) {
         const { competitionId } = req.params;
         const competition = await Competition.findById(competitionId).lean();
         if (!competition) throw new Error('Could not find competition');
-        const competitionTeams = await Team.find({ _id: { $in: competition.teams } }).lean();
-        const competitionMatches = await Match.find({ competition: competitionId }).lean();
-        competition.teams = competitionTeams;
-        competition.matches = competitionMatches;
         return res.status(200).json(competition);
     } catch (error) {
         console.error(error.message);
