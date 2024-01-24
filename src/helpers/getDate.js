@@ -1,6 +1,7 @@
 const { ONE_DAY_IN_MS, THREE_DAYS_IN_MS } = require('../constants');
 
 const getYesterdayDate = () => new Date((new Date()).getTime() - ONE_DAY_IN_MS);
+const getTodayDate = () => (new Date());
 const getTommorowDate = (date) => new Date(date.getTime() + ONE_DAY_IN_MS);
 
 const getDateFrom = () => (new Date((new Date()).getTime() - THREE_DAYS_IN_MS)).toLocaleDateString();
@@ -21,15 +22,20 @@ function getFromToDates(from, to) {
     if (to) toDate = new Date(to);
     else toDate = getTommorowDate(fromDate);
     return { startDate: fromDate.toLocaleDateString(), endDate: toDate.toLocaleDateString() };
-}
+};
+
+const checkIfCompetitionHasEnded = (competitionEndDate) => (Date.now() + ONE_DAY_IN_MS) > (new Date(competitionEndDate)).getTime();
 
 const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
 
 module.exports = {
     getYesterdayDate,
+    getTodayDate,
+    getTommorowDate,
     getFromToDates,
     getDateFrom,
     getDateTo,
     getDateFilters,
-    convertToTimeNumber
+    convertToTimeNumber,
+    checkIfCompetitionHasEnded
 }
