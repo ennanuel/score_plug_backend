@@ -14,14 +14,12 @@ const H2HSchema = Schema(
             totalGoals: Number,
             homeTeam: {
                 id: Number,
-                name: String,
                 wins: Number,
                 draws: Number,
                 losses: Number
             },
             awayTeam: {
                 id: Number,
-                name: String,
                 wins: Number,
                 draws: Number,
                 losses: Number

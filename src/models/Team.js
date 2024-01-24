@@ -32,12 +32,6 @@ const TeamSchema = Schema(
                 type: Number,
                 required: true
             }
-        ],
-        matches: [
-            { 
-                type: Number,
-                ref: true
-            }
         ]
     },
     { timestamps: true }
