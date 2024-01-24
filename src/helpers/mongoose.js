@@ -1,13 +1,11 @@
+const Match = require("../models/Match")
 
-
-const refineMatchValues = ({ id, competition, homeTeam, awayTeam, isMain = false, head2head = null, isPrevMatch = false, ...match }) => ({
+const refineMatchValues = ({ id, competition, homeTeam, awayTeam, ...match }) => ({
     ...match,
     _id: id,
     competition: competition.id,
     homeTeam: homeTeam.id,
     awayTeam: awayTeam.id,
-    head2head,
-    isMain
 });
 
 const prepareForBulkWrite = (doc) => ({
@@ -19,8 +17,11 @@ const prepareForBulkWrite = (doc) => ({
     }
 });
 
+const prepareMatchForUpload = (match) => Match.findOneAndUpdate({ _id: match._id }, { $set: match }, { new: true, upsert: true });
+
 
 module.exports = {
     prepareForBulkWrite,
-    refineMatchValues
+    refineMatchValues,
+    prepareMatchForUpload
 };
