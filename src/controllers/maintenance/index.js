@@ -4,11 +4,12 @@ const matchesHandler = require('./matchesHandler');
 
 async function updateServer(req, res) {
     try {
+        console.log("starting Competitions...");
         await competitionHandler();
-        console.warn('starting Matches...');
-        await matchesHandler();
         console.warn('starting Teams...');
         await teamHandler();
+        console.warn('starting Matches...');
+        await matchesHandler();
         console.log('success!')
         return res.status(200).json({ message: 'Server Updated!' });
     } catch (error) {
