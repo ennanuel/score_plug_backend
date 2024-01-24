@@ -1,4 +1,4 @@
-
+const getKeysToUpdate = ({ home, away }) => home > away ? ['wins', 'losses'] : home < away ? ['wins', 'losses'] : ['draws', 'draws'];
 
 function reduceToObjectWithIdAsKey(objectWithMatchIdsAsKeys, matchIds) {
     const result = { ...objectWithMatchIdsAsKeys };
@@ -17,13 +17,17 @@ const reduceToArrayOfMatchIds = (matchIds, { matches }) => [...matchIds, ...matc
 
 function reduceToMatchDetails(matchDetails, match) {
     let { matchesPlayed, wins, draws, losses } = matchDetails;
+
     const lostMatch = match.score.fullTime[match.teams.main] < match.score.fullTime[match.teams.other];
     const wonMatch = match.score.fullTime[match.teams.main] > match.score.fullTime[match.teams.other];
     const drewMatch = match.score.fullTime[match.teams.main] == match.score.fullTime[match.teams.other];
-    matchesPlayed += 1;
+
     if (wonMatch) wins += 1;
     else if (drewMatch) draws += 1;
-    else if (lostMatch) draws += 1;
+    else if (lostMatch) losses += 1;
+
+    matchesPlayed += 1;
+
     return { matchesPlayed, wins, draws, losses };
 };
 
