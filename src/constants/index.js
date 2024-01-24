@@ -4,7 +4,7 @@ const HEADERS = {
     'x-auth-token': process.env.API_KEY
 }
 
-const COMPETION_RANKINGS = [
+const COMPETITION_RANKINGS = [
     {
         name: 'FIFA World Cup',
         code: 'WC'
@@ -64,4 +64,4 @@ const VALID_MATCH_STATUS_REGEX = /(in_play|timed|finished)/i;
 const THREE_DAYS_IN_MS = 259200000;
 const ONE_DAY_IN_MS = 86400000;
 
-module.exports = { HEADERS, COMPETION_RANKINGS, THREE_DAYS_IN_MS, ONE_DAY_IN_MS, VALID_MATCH_STATUS_REGEX }
+module.exports = { HEADERS, COMPETITION_RANKINGS, THREE_DAYS_IN_MS, ONE_DAY_IN_MS, VALID_MATCH_STATUS_REGEX }
