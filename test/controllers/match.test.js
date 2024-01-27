@@ -70,13 +70,25 @@ describe("Testing Match Route that fetches a single match from the Database", ()
 
 describe("Testing Match Route that fetches a matches from the Database, with the 'from', 'to' and 'status' query filters", () => {
     const matchFilterFunction = (filter) => ({
+        limit: (limit) => ({
+            skip: (skip) => ({
+                lean: jest.fn().mockResolvedValue(MOCK_MATCHES.filter(
+                    (data) => (
+                        filter.$and[0].status.$regex.test(data.status) &&
+                        (new Date(filter.$and[1].utcDate.$gte)).getTime() <= (new Date(data.utcDate)).getTime() &&
+                        (new Date(filter.$and[2].utcDate.$lte)).getTime() >= (new Date(data.utcDate)).getTime()
+                    )
+                ))
+            })
+        }),
         lean: jest.fn().mockResolvedValue(MOCK_MATCHES.filter(
             (data) => (
                 filter.$and[0].status.$regex.test(data.status) &&
                 (new Date(filter.$and[1].utcDate.$gte)).getTime() <= (new Date(data.utcDate)).getTime() &&
                 (new Date(filter.$and[2].utcDate.$lte)).getTime() >= (new Date(data.utcDate)).getTime()
             )
-        ))
+        )),
+        count: jest.fn().mockResolvedValue(10)
     });
     const teamFindMock = (filter) => ({
         lean: () => jest.fn().mockResolvedValue([
@@ -96,9 +108,10 @@ describe("Testing Match Route that fetches a matches from the Database, with the
 
         const response = await request(app).get("/api/v2/match");
 
+
         expect(response.status).toBe(200);
-        expect(response.body.length).toBe(2);
-        expect(typeof (response.body[0].homeTeam.name)).toBe("string");
+        expect(response.body.totalPages).toBe(10);
+        expect(typeof (response.body.matches[0].homeTeam.name)).toBe("string");
     });
 
     it("should return matches whose dates match the 'from' and 'to' date queries in 'MM/DD/YYYY' format", async () => {
@@ -107,7 +120,7 @@ describe("Testing Match Route that fetches a matches from the Database, with the
         const response = await request(app).get("/api/v2/match?from=01/23/2023&to=01/23/2023");
 
         expect(response.status).toBe(200);
-        expect(response.body.length).toBe(6);
+        expect(response.body.matches.length).toBe(6);
     });
 
     it("should return matches whose dates match the status of 'FINISHED' and 'from' and 'to' date queries", async () => {
@@ -116,8 +129,8 @@ describe("Testing Match Route that fetches a matches from the Database, with the
         const response = await request(app).get("/api/v2/match?from=01/23/2023&to=01/23/2023&status=finished");
 
         expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-        expect(response.body.every(data => /finished/i.test(data.status))).toBe(true);
+        expect(response.body.matches.length).toBe(1);
+        expect(response.body.matches.every(data => /finished/i.test(data.status))).toBe(true);
     });
 
     it("should return matches whose dates match the status of 'IN_PLAY' and 'from' and 'to' date queries", async () => {
@@ -126,8 +139,8 @@ describe("Testing Match Route that fetches a matches from the Database, with the
         const response = await request(app).get("/api/v2/match?from=01/23/2023&to=01/23/2023&status=in_play");
 
         expect(response.status).toBe(200);
-        expect(response.body.length).toBe(4);
-        expect(response.body.every(data => /in_play|pause/i.test(data.status))).toBe(true);
+        expect(response.body.matches.length).toBe(4);
+        expect(response.body.matches.every(data => /in_play|pause/i.test(data.status))).toBe(true);
     });
 
     it("should return matches whose dates match the 'from' and 'to' date queries", async () => {
@@ -137,18 +150,25 @@ describe("Testing Match Route that fetches a matches from the Database, with the
         const response = await request(app).get(`/api/v2/match?from=01/20/2023&to=${todaysDate}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.length).toBe(12);
+        expect(response.body.matches.length).toBe(12);
     });
 });
 
 describe("Testing Match Route that fetches a matches from the Database, and returns the matches and their outcomes", () => {
+    const matches = [
+        { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2345, utcDate: (new Date()).toLocaleDateString() },
+        { _id: 124, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2346, utcDate: (new Date()).toLocaleDateString() },
+        { _id: 125, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2347, utcDate: (new Date()).toLocaleDateString() },
+        { _id: 126, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2348, utcDate: (new Date()).toLocaleDateString() }
+    ];
     const matchFilterFunction = (filter) => ({
-        lean: jest.fn().mockResolvedValue([
-            { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2345, utcDate: (new Date()).toLocaleDateString() },
-            { _id: 124, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2346, utcDate: (new Date()).toLocaleDateString() },
-            { _id: 125, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2347, utcDate: (new Date()).toLocaleDateString() },
-            { _id: 126, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2348, utcDate: (new Date()).toLocaleDateString() }
-        ])
+        limit: (limit) => ({
+            skip: (skip) => ({
+                lean: jest.fn().mockResolvedValue(matches)
+            })
+        }),
+        lean: jest.fn().mockResolvedValue(matches),
+        count: jest.fn().mockResolvedValue(4)
     });
     const teamFindMock = (filter) => ({
         lean: jest.fn().mockResolvedValue([
@@ -180,7 +200,9 @@ describe("Testing Match Route that fetches a matches from the Database, and retu
 
         const response = await request(app).get("/api/v2/match/prediction/outcomes");
 
-        const totalOutcomePercentage = Math.round(response.body[0].outcome.homeWin + response.body[0].outcome.draw + response.body[0].outcome.awayWin);
+        const outcome = response.body.matches[0].outcome;
+        const totalOutcomePercentage = Math.round(outcome.homeWin + outcome.draw + outcome.awayWin);
+
         expect(response.status).toBe(200);
         expect(totalOutcomePercentage).toBe(100);
     });
