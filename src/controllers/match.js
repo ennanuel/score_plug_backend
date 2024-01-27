@@ -6,6 +6,7 @@ const { headers } = require('../constants');
 
 const { getFromToDates } = require("../helpers/getDate")
 const { createMatchFilterRegExp, updateMatchStatusAndScore, expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome } = require('../utils/match');
+const { convertToNumber } = require('../helpers');
 
 async function getMatchDetails(req, res) {
     try {
@@ -19,13 +20,17 @@ async function getMatchDetails(req, res) {
 
         return res.status(200).json(matchWithH2HAndPrevMatches);
     } catch (error) {
+        console.error(error);
         return res.status(500).json({ message: error.message });
     }
-}
+};
 
 async function getAllMatches (req, res) {
     try {
-        const { status, from, to } = req.query;
+        const { status, from, to, page = 9, limit = 5 } = req.query;
+
+        const limitNum = convertToNumber(limit);
+        const pageNum = convertToNumber(page);
 
         const statusRegExp = createMatchFilterRegExp(status);
         const { startDate, endDate } = getFromToDates(from, to);
@@ -36,29 +41,48 @@ async function getAllMatches (req, res) {
                 { utcDate: { $gte: startDate } },
                 { utcDate: { $lte: endDate } }
             ]
-        }).lean();
+        }).limit(limitNum).skip(limitNum * pageNum).lean();
+
+        const totalMatches = await Match.find({
+            $and: [
+                { status: { $regex: statusRegExp } },
+                { utcDate: { $gte: startDate } },
+                { utcDate: { $lte: endDate } }
+            ]
+        }).count();
 
         const matchesToExpand = matches.map(expandMatchTeamsAndCompetition)
         const expandedMatches = await Promise.all(matchesToExpand);
 
-        return res.status(200).json(expandedMatches);
+        const result = { matches: expandedMatches, totalPages: totalMatches, currentPage: pageNum };
+        return res.status(200).json(result);
     } catch (error) {
-        console.error(error.message);
+        console.error(error);
         return res.status(500).json({ message: error.message });
     }
 }
 
 async function getMatchPicks(req, res) {
     try {
-        const { from, to } = req.query;
+        const { from, to, limit, page } = req.query;
         const { startDate, endDate } = getFromToDates(from, to);
+
+        const limitNum = convertToNumber(limit);
+        const pageNum = convertToNumber(page);
 
         const matches = await Match.find({
             $and: [
                 { utcDate: { $gt: startDate } },
                 { utcDate: { $lte: endDate } }
             ]
-        }).lean();
+        }).limit(limitNum).skip(pageNum * limitNum).lean();
+
+        const totalMatches = await Match.find({
+            $and: [
+                { utcDate: { $gt: startDate } },
+                { utcDate: { $lte: endDate } }
+            ]
+        }).count();
 
         const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
         const expandedMatches = await Promise.all(matchesToExpand);
@@ -68,9 +92,10 @@ async function getMatchPicks(req, res) {
 
         const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchOutcome);
 
-        return res.status(200).json(matchesWithOutcome);
+        const result = { matches: matchesWithOutcome, totalPages: totalMatches, currentPage: pageNum };
+        return res.status(200).json(result);
     } catch (error) {
-        console.error(error.message);
+        console.error(error);
         return res.status(500).json({ message: error.message });
     }
 };
@@ -85,7 +110,7 @@ async function updateMatches (req, res) {
         await Promise.all(updateMatchStatusAndScore({ previousMatches, currentMatches }));
         return res.status(200).json({ message: 'Matches updated' });
     } catch (error) {
-        console.error(error.message);
+        console.error(error);
         return res.status(500).json({ message: error.message });
     }
 };
