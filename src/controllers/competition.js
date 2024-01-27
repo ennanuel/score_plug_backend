@@ -11,7 +11,34 @@ async function getAllCompetitions(req, res) {
         console.error(error.message);
         return res.status(500).json({ message: error.message });
     }
-}
+};
+
+async function getCompetitionsWithMatches(req, res) { 
+    try {
+        return res.status(200).json([])
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+async function getCompetitionMatches(req, res) {
+    try {
+        return res.status(200).json([])
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+async function getCompetitionTeams(req, res) { 
+    try {
+        return res.status(200).json([])
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: error.message });
+    }
+};
 
 async function getActiveCompetitions(req, res) {
     try {
@@ -40,10 +67,13 @@ async function getCompetitionDetails(req, res) {
         console.error(error.message);
         return res.status(500).json({ message: error.message });
     }
-}
+};
 
 module.exports = {
     getAllCompetitions,
+    getCompetitionsWithMatches,
+    getCompetitionMatches,
+    getCompetitionTeams,
     getActiveCompetitions,
     getCompetitionDetails
 }
