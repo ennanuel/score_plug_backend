@@ -1,6 +1,5 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
-const { app, server } = require('../..');
+const app = require('../../app');
 const Match = require('../../src/models/Match');
 const Team = require("../../src/models/Team");
 const H2H = require("../../src/models/H2H");
@@ -208,6 +207,4 @@ describe("Testing Match Route that fetches a matches from the Database, and retu
     });
 })
 
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+afterAll(async () => {});
