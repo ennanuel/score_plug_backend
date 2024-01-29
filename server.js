@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+// The express is declared in a different file to fix jest exit error when testing.
+
 const app = require("./app");
 
 mongoose.set('strictQuery', false);
