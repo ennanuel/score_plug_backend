@@ -11,7 +11,13 @@ function reduceToObjectWithIdAsKey(objectWithMatchIdsAsKeys, matchIds) {
         }
     }
     return result;
-}
+};
+
+const reduceToMatchCompetitionsIds = (competitionIds, match) => {
+    const competitionId = match.competition;
+    if (competitionIds.includes(competitionId)) return competitionIds;
+    return [...competitionIds, competitionId]
+};
 
 const reduceToArrayOfMatchIds = (matchIds, { matches }) => [...matchIds, ...matches];
 
@@ -48,5 +54,6 @@ module.exports = {
     reduceToArrayOfMatchIds,
     reduceToH2HDetails,
     reduceToMatchDetails,
-    reduceToObjectWithIdAsKeys
+    reduceToObjectWithIdAsKeys,
+    reduceToMatchCompetitionsIds
 }
