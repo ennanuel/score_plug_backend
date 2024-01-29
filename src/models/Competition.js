@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const TableSchema = Schema(
     {
         position: Number,
-        team: { name: String, shortName: String, id: Number, crest: String },
+        team: Number,
         playedGames: Number,
         form: String,
         won: Number,
