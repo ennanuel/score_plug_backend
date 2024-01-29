@@ -7,6 +7,7 @@ const { VALID_MATCH_STATUS_REGEX } = require("../constants");
 
 const { getDateFrom } = require("../helpers/getDate");
 
+const getCompetition = (competitionId) => Competition.findById(competitionId).lean();
 
 function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
     const matchesToUpdate = [];
@@ -28,18 +29,16 @@ function createMatchFilterRegExp(filter) {
     return regExp;
 };
 
-async function getMatchTeams(match) {
-    const matchTeamIds = [match.homeTeam, match.awayTeam];
-    const teams = await Team.find({ _id: { $in: matchTeamIds } }).lean();
-    const [homeTeam, awayTeam] = teams.sort(team => team._id === match.homeTeam ? -1 : 1);
-    return { homeTeam, awayTeam };
-};
-
-const getCompetition = (competitionId) => Competition.findById(competitionId).lean();
+async function getMatchWithTeamData(match) {
+    const teams = await Team.find({ _id: { $in: [match.homeTeam, match.awayTeam] } }).lean();
+    const [homeTeam, awayTeam] = teams.sort((team) => team._id == match.homeTeam ? -1 : 1);
+    const newMatchData = { ...match, homeTeam, awayTeam };
+    return newMatchData;
+}
 
 async function expandMatchTeamsAndCompetition(match) {
     const competition = await getCompetition(match.competition);
-    const { homeTeam, awayTeam } = await getMatchTeams(match);
+    const { homeTeam, awayTeam } = await getMatchWithTeamData(match);
     const expandedMatch = { ...match, homeTeam, awayTeam, competition };
     return expandedMatch;
 };
@@ -110,7 +109,7 @@ module.exports = {
     updateMatchStatusAndScore,
     createMatchFilterRegExp,
     checkIfIsMainMatch,
-    getMatchTeams,
+    getMatchWithTeamData,
     expandMatchTeamsAndCompetition,
     getMatchHead2HeadAndPreviousMatches,
     getMatchOutcome
