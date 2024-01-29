@@ -85,13 +85,16 @@ const getCompetitionData = (competitionCode) => new Promise(
     }
 );
 
+const changeCompetitionStandingsTeamsToJustId = (standing) => ({ ...standing, table: standing.table.map(position => ({ ...position, team: position.team.id })) });
+
 const getCompetitionStandings = (competitionId) => new Promise(
     async function (resolve, reject) {
         try {
             console.log('getting competition standings...');
             const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/standings`);
-            console.log('standings fetch successful!')
-            resolve(result.standings)
+            console.log('standings fetch successful!');
+            const standingWithTeamId = result.standings.map(changeCompetitionStandingsTeamsToJustId);
+            resolve(standingWithTeamId);
         } catch (error) {
             reject(error);
         }
