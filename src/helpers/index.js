@@ -1,4 +1,4 @@
-const convertToNumber = (val) => +val === null ? 0 : val;
+const convertToNumber = (val) => /nan/i.test(Number(val)) ? 0 : Number(val);
 
 module.exports = {
     convertToNumber
