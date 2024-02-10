@@ -1,3 +1,5 @@
+const { ONE_HOUR_IN_MS } = require("../constants");
+
 const getKeysToUpdate = ({ home, away }) => home > away ? ['wins', 'losses'] : home < away ? ['wins', 'losses'] : ['draws', 'draws'];
 
 function reduceToObjectWithIdAsKey(objectWithMatchIdsAsKeys, matchIds) {
@@ -47,6 +49,20 @@ function reduceToH2HDetails(H2HDetails, match) {
     return { numberOfMatches, totalGoals, homeTeam, awayTeam };
 };
 
+function reduceMatchToUpdateSchedule(arrayOfUpdateSchedule, match) {
+    const result = [...arrayOfUpdateSchedule];
+    const matchTime = new Date(match.utcDate).getTime();
+    const start = matchTime;
+    const end = matchTime + (ONE_HOUR_IN_MS * 2.3);
+    if (result.length < 1) result.push({ start, end });
+    else {
+        const currentSchedule = result.shift();
+        if (currentSchedule.end > start) result.unshift({ start: currentSchedule.start, end });
+        else result.unshift({ start, end }, currentSchedule);
+    }
+    return result;
+}
+
 const reduceToObjectWithIdAsKeys = (objectWithIds, object) => ({ ...objectWithIds, [object._id]: object });
 
 module.exports = {
@@ -55,5 +71,6 @@ module.exports = {
     reduceToH2HDetails,
     reduceToMatchDetails,
     reduceToObjectWithIdAsKeys,
-    reduceToMatchCompetitionsIds
+    reduceToMatchCompetitionsIds,
+    reduceMatchToUpdateSchedule
 }
