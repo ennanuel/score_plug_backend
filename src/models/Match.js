@@ -36,11 +36,16 @@ const matchSchema = Schema(
         head2head: String,
         score: {
             winner: String,
+            duration: String,
             fullTime: {
                 home: Number,
                 away: Number
             },
-            halfTime: {
+            secondHalf: {
+                home: Number,
+                away: Number
+            },
+            firstHalf: {
                 home: Number,
                 away: Number
             }
