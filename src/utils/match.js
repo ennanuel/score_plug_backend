@@ -3,9 +3,15 @@ const Team = require("../models/Team");
 const Competition = require('../models/Competition');
 const Match = require('../models/Match');
 
-const { VALID_MATCH_STATUS_REGEX } = require("../constants");
+const {
+    ONE_DAY_IN_MS,
+    ONE_HOUR_IN_MS,
+    ONE_MINUTE_IN_MS,
+    VALID_MATCH_STATUS_REGEX
+} = require("../constants");
 
 const { getDateFrom } = require("../helpers/getDate");
+const { getRegularMatchMinutes, getExtraMatchTimeMinutes } = require('../helpers');
 
 const getCompetition = (competitionId) => Competition.findById(competitionId).lean();
 
@@ -101,7 +107,64 @@ function getMatchOutcome(match) {
     const outcome = { homeWin: +homeWinOutcome, draw: +drawOutcome, awayWin: +awayWinOutcome };
     const matchWithOutcome = { ...match, outcome };
     return matchWithOutcome;
+};
+
+
+
+function changeMatchScoreFormat({ halfTime, fullTime, winner, duration }) {
+    // the fulltime property for home or away is 'null' if the match has not started yet, hence the 'firstHalf' property logic
+    const newMatchScoreFormat = {
+        winner,
+        duration,
+        firstHalf: {
+            home: (halfTime.home === null && fullTime.home !== null) ? fullTime.home : halfTime.home,
+            away: (halfTime.away === null && fullTime.away !== null) ? fullTime.away : halfTime.away
+        },
+        secondHalf: {
+            home: (halfTime.home !== null && fullTime.home !== null) ? fullTime.home - halfTime.home : null,
+            away: (halfTime.away !== null && fullTime.away !== null) ? fullTime.away - halfTime.away : null
+        },
+        fullTime: {
+            home: fullTime.home,
+            away: fullTime.away
+        }
+    }
+
+    return newMatchScoreFormat;
 }
+
+function getTimeRemainingForGameToStart(matchDate) {
+    const matchTime = new Date(matchDate);
+    const currentTime = Date.now();
+    const timeLeft = matchTime.getTime() - currentTime;
+
+    const days = Math.floor(timeLeft / ONE_DAY_IN_MS);
+    const hours = Math.floor(timeLeft / ONE_HOUR_IN_MS);
+    const minutes = Math.floor(timeLeft / ONE_MINUTE_IN_MS);
+    
+    const timeRemaining = { days, hours, minutes };
+    
+    return timeRemaining;
+}
+
+function getMatchMinutesPassed({ status, utcDate, score }) {
+    if (/finished|scheduled/i.test(status)) return null;
+
+    const currentTime = Date.now();
+    const matchDate = new Date(utcDate);
+    const minutesPassed = currentTime - matchDate.getTime();
+
+    const matchMinutes = /regular/i.test(score.duration) ?
+        getRegularMatchMinutes(minutesPassed) :
+        getExtraMatchTimeMinutes(minutesPassed);
+
+    return matchMinutes;
+};
+
+function formatMatchToCorrectFormat(match) { 
+    const updatedMatchDetails = { ...match };
+    return Match.updateOne({ _id: match.id }, { $set: { updatedMatchDetails } });
+};
 
 const checkIfIsMainMatch = (matchDate) => (new Date(matchDate)).getTime() >= (new Date(getDateFrom())).getTime();
 
@@ -112,5 +175,8 @@ module.exports = {
     getMatchWithTeamData,
     expandMatchTeamsAndCompetition,
     getMatchHead2HeadAndPreviousMatches,
-    getMatchOutcome
+    getMatchOutcome,
+    changeMatchScoreFormat,
+    getTimeRemainingForGameToStart,
+    getMatchMinutesPassed
 }
