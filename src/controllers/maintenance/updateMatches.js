@@ -1,6 +1,7 @@
 const { fetchHandler } = require("../../helpers/fetchHandler");
 const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 const Match = require("../../models/Match");
+const { getTimeForNextUpdateCall } = require("../../utils/scheduler");
 
 async function updateMatches(req, res) {
     try {
@@ -9,6 +10,7 @@ async function updateMatches(req, res) {
         const matchesObjectWithIdAsKey = matches.reduce(reduceToObjectWithIdAsKeys);
         const matchesInDB = await Match.find({ _id: { $in: matchIds } });
         const matchesToSave = []
+
         for (const match of matchesInDB) {
             const matchWithUpdatedValue = matchesObjectWithIdAsKey[match._id];
             if (matchWithUpdatedValue.lastUpdated === match.lastUpdated) continue;
@@ -16,9 +18,11 @@ async function updateMatches(req, res) {
             match.score = matchWithUpdatedValue.score;
             match.lastUpdated = matchWithUpdatedValue.lastUpdated;
             matchesToSave.push(match.save());
-        }
-        const updatedMatches = await Promise.all(matchesToSave);
-        return res.status(200).json({ message: `${updatedMatches.length} matches updated!` });
+        };
+
+        await Promise.all(matchesToSave);
+        const nextUpdateCallTime = getTimeForNextUpdateCall();
+        return res.status(200).json({ message: `matches updated!`, nextUpdate: nextUpdateCallTime });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: error.message });
