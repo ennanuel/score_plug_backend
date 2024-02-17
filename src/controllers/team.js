@@ -12,7 +12,7 @@ async function getAllTeams(req, res) {
         const limitNum = convertToNumber(limit);
         const pageNum = convertToNumber(page);
         const teams = await Team.find().sort({ name: -1 }).limit(limitNum).skip(limitNum * pageNum).lean();
-        console.warn(limitNum * pageNum, (limitNum * pageNum) + limitNum);
+        
         const totalTeams = await Team.find().sort({ name: -1 }).count();
         return res.status(200).json({ teams, totalPages: totalTeams, currentPage: pageNum });
     } catch (error) {
