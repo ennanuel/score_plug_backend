@@ -1,10 +1,10 @@
-const Match = require('../../models/Match')
-const Team = require('../../models/Team');
-const Player = require('../../models/Player');
-const Competition = require('../../models/Competition');
-const { fetchHandler, delay } = require('../../helpers/fetchHandler');
-const { prepareForBulkWrite, refineMatchValues } = require('../../helpers/mongoose');
-const { checkIfCompetitionHasEnded } = require('../../helpers/getDate');
+const Match = require('../../../models/Match')
+const Team = require('../../../models/Team');
+const Player = require('../../../models/Player');
+const Competition = require('../../../models/Competition');
+const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
+const { prepareForBulkWrite, refineMatchValues } = require('../../../helpers/mongoose');
+const { checkIfCompetitionHasEnded } = require('../../../helpers/getDate');
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {

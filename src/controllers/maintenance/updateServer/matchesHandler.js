@@ -1,13 +1,13 @@
-const Match = require('../../models/Match');
-const H2H = require('../../models/H2H');
+const Match = require('../../../models/Match');
+const H2H = require('../../../models/H2H');
 
 const deleteRedundantMatches = require('./deleteRedundantMatches');
-const { fetchHandler, delay } = require('../../helpers/fetchHandler');
-const { prepareForBulkWrite, prepareMatchForUpload } = require('../../helpers/mongoose');
+const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
+const { prepareForBulkWrite, prepareMatchForUpload } = require('../../../helpers/mongoose');
 
-const { getDateFilters } = require("../../helpers/getDate");
-const { refineMatchValues } = require("../../helpers/mongoose");
-const { checkIfIsMainMatch } = require("../../utils/match")
+const { getDateFilters } = require("../../../helpers/getDate");
+const { refineMatchValues } = require("../../../helpers/mongoose");
+const { checkIfIsMainMatch } = require("../../../utils/match")
 
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {

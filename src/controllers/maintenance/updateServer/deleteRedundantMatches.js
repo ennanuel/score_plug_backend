@@ -1,8 +1,8 @@
-const Match = require('../../models/Match');
-const H2H = require('../../models/H2H');
-const Team = require('../../models/Team');
-const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails, reduceToArrayOfMatchIds } = require('../../helpers/reduce');
-const { getDateFrom } = require("../../helpers/getDate");
+const Match = require('../../../models/Match');
+const H2H = require('../../../models/H2H');
+const Team = require('../../../models/Team');
+const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails, reduceToArrayOfMatchIds } = require('../../../helpers/reduce');
+const { getDateFrom } = require("../../../helpers/getDate");
         
 const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? { main: 'home', other: 'away' } : { main: 'away', other: 'home' };
 
