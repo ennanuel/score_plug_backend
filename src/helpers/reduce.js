@@ -50,14 +50,17 @@ function reduceToH2HDetails(H2HDetails, match) {
 };
 
 function reduceMatchToUpdateSchedule(arrayOfUpdateSchedule, match) {
+    const ARROUND_TWO_HOURS_IN_MS = ONE_HOUR_IN_MS * 2.3
     const result = [...arrayOfUpdateSchedule];
-    const matchTime = new Date(match.utcDate).getTime();
-    const start = matchTime;
-    const end = matchTime + (ONE_HOUR_IN_MS * 2.3);
+    const matchTimeInMilliseconds = new Date(match.utcDate).getTime();
+    const start = (new Date(matchTimeInMilliseconds)).toUTCString()
+    const end = (new Date(matchTimeInMilliseconds + ARROUND_TWO_HOURS_IN_MS)).toUTCString();
     if (result.length < 1) result.push({ start, end });
     else {
         const currentSchedule = result.shift();
-        if (currentSchedule.end > start) result.unshift({ start: currentSchedule.start, end });
+        const currentScheduleEndTime = (new Date(currentSchedule.end)).getTime();
+        const matchStartTime = (new Date(start)).getTime();
+        if (currentScheduleEndTime > matchStartTime) result.unshift({ start: currentSchedule.start, end });
         else result.unshift({ start, end }, currentSchedule);
     }
     return result;
