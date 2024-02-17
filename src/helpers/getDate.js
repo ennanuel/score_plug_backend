@@ -2,7 +2,7 @@ const { ONE_DAY_IN_MS, THREE_DAYS_IN_MS } = require('../constants');
 
 const getYesterdayDate = () => new Date((new Date()).getTime() - ONE_DAY_IN_MS);
 const getTodayDate = () => (new Date());
-const getTommorowDate = (date) => new Date(date.getTime() + ONE_DAY_IN_MS);
+const getTommorowDate = (date = (new Date())) => new Date(date.getTime() + ONE_DAY_IN_MS);
 
 const getDateFrom = () => (new Date((new Date()).getTime() - THREE_DAYS_IN_MS)).toLocaleDateString();
 const getDateTo = () => (new Date((new Date()).getTime() + THREE_DAYS_IN_MS)).toLocaleDateString();
