@@ -2,8 +2,8 @@ const router = (require('express')).Router();
 const updateServer = require('../controllers/maintenance/updateServer/');
 const updateMatches = require('../controllers/maintenance/updateMatches');
 
-router.put('/update', updateServer);
+router.put('/update/server', updateServer);
 
-router.put("/matches", updateMatches);
+router.put("/update/match", updateMatches);
 
 module.exports = router;
