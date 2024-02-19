@@ -1,7 +1,7 @@
 const { fetchHandler } = require("../../helpers/fetchHandler");
 const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 const Match = require("../../models/Match");
-const { getTimeForNextUpdateCall } = require("../../utils/scheduler");
+const { getTimeForNextUpdateCall, updateSchedules } = require("../../utils/scheduler");
 
 async function updateMatches(req, res) {
     try {
@@ -21,8 +21,11 @@ async function updateMatches(req, res) {
         };
 
         await Promise.all(matchesToSave);
+        const { failed, message } = updateSchedules();
+        if (failed) throw new Error(message);
+
         const nextUpdateCallTime = getTimeForNextUpdateCall();
-        return res.status(200).json({ message: `matches updated!`, nextUpdate: nextUpdateCallTime });
+        return res.status(200).json({ message: `matches updated!`, nextCall: nextUpdateCallTime });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: error.message });
