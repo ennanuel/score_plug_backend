@@ -1,6 +1,7 @@
 const competitionHandler = require('./competitionHandler');
 const teamHandler = require('./teamHandler');
 const matchesHandler = require('./matchesHandler');
+const { createUpdateSchedule } = require('../../../utils/scheduler');
 
 async function updateServer(req, res) {
     try {
@@ -10,7 +11,8 @@ async function updateServer(req, res) {
         await teamHandler();
         console.warn('starting Matches...');
         await matchesHandler();
-        console.log('success!')
+        console.log('success!');
+        await createUpdateSchedule();
         return res.status(200).json({ message: 'Server Updated!' });
     } catch (error) {
         console.error(error);
