@@ -49,8 +49,9 @@ async function expandMatchTeamsAndCompetition(match) {
     return expandedMatch;
 };
 
-async function getMatchHead2Head(h2hId, includeMatches) {
+async function getMatchHead2Head(h2hId) {
     const head2head = await H2H.findById(h2hId).lean();
+    if (!head2head) return [];
     const head2headMatches = await Match.find({ _id: { $in: head2head.matches } }).lean();
     head2head.matches = head2headMatches;
     return head2head;
@@ -58,17 +59,18 @@ async function getMatchHead2Head(h2hId, includeMatches) {
 
 function arrangeHead2HeadTeams({ head2head, homeTeamId, awayTeamId }) {
     const arrangedHead2Head = { ...head2head };
-    const { homeTeam, awayTeam } = head2head.aggregates;
+    if (head2head.aggregates) {
+        const { homeTeam, awayTeam } = head2head.aggregates;
 
-    if (homeTeam.id === awayTeamId && awayTeam.id === homeTeamId) {
-        arrangedHead2Head.homeTeam = awayTeam;
-        arrangedHead2Head.awayTeam = homeTeam;
+        if (homeTeam.id === awayTeamId && awayTeam.id === homeTeamId) {
+            arrangedHead2Head.homeTeam = awayTeam;
+            arrangedHead2Head.awayTeam = homeTeam;
+        }
     }
-
     return arrangedHead2Head;
 }
 
-async function getMatchHead2HeadAndPreviousMatches(match, includeMatches) {
+async function getMatchHead2HeadAndPreviousMatches(match) {
     const matchHead2Head = await getMatchHead2Head(match.head2head);
     const arrangedHead2Head = arrangeHead2HeadTeams({ head2head: matchHead2Head, homeTeamId: match.homeTeam._id, awayTeamId: match.awayTeam._id });
 
