@@ -50,6 +50,11 @@ const matchSchema = Schema(
                 away: Number
             }
         },
+        outcome: {
+            homeWin: Number,
+            draw: Number,
+            awayWin: Number
+        },
         referees: [RefereeSchema]
     },
     { timestamps: true }
