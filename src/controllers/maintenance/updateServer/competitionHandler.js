@@ -1,8 +1,8 @@
 const Competition = require('../../../models/Competition');
 const Team = require('../../../models/Team');
+const Player = require('../../../models/Player');
 const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
 const { prepareForBulkWrite } = require("../../../helpers/mongoose");
-const Player = require('../../../models/Player');
 
 const { getYesterdayDate } = require("../../../helpers/getDate");
 const { COMPETITION_RANKINGS } = require('../../../constants');
