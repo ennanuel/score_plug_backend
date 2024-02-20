@@ -7,7 +7,7 @@ const { prepareForBulkWrite, prepareMatchForUpload } = require('../../../helpers
 
 const { getDateFilters } = require("../../../helpers/getDate");
 const { refineMatchValues } = require("../../../helpers/mongoose");
-const { checkIfIsMainMatch } = require("../../../utils/match")
+const { checkIfIsMainMatch, expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome } = require("../../../utils/match")
 
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {
@@ -19,6 +19,9 @@ const matchesHandler = () => new Promise(
 
             console.log('Deleting irrelevant matches...');
             await deleteRedundantMatches();
+
+            console.log("Calculating matches outcomes");
+            await updateMatchesOutcomes();
             resolve();
         } catch (error) {
             reject(error);
@@ -115,5 +118,31 @@ const saveH2HMatches = (matches) => new Promise(
         }
     }
 );
+
+const updateMatchesOutcomes = () => new Promise(
+    async function (resolve, reject) {
+        try {
+            const matches = await Match.find({
+                $and: [
+                    { utcDate: { $gt: startDate } },
+                    { utcDate: { $lte: endDate } }
+                ]
+            }).lean();
+
+            const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
+            const expandedMatches = await Promise.all(matchesToExpand);
+
+            const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
+            const matchesWithH2HandPrevMatches = await Promise.all(matchesToGetH2HandPrevMatches);
+
+            const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchOutcome);
+            const preparedMatches = matchesWithOutcome.map(prepareForBulkWrite);
+            await Match.bulkWrite(preparedMatches);
+            resolve()
+        } catch (error) {
+            reject(error);
+        }
+    }
+)
 
 module.exports = matchesHandler;
