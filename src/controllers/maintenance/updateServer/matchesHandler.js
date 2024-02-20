@@ -7,7 +7,7 @@ const { prepareForBulkWrite, prepareMatchForUpload } = require('../../../helpers
 
 const { getDateFilters } = require("../../../helpers/getDate");
 const { refineMatchValues } = require("../../../helpers/mongoose");
-const { checkIfIsMainMatch, expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome } = require("../../../utils/match")
+const { checkIfIsMainMatch } = require("../../../utils/match")
 
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {
@@ -17,11 +17,9 @@ const matchesHandler = () => new Promise(
             await saveMainMatches(matchesToSave);
             await handleMatchesWithoutHead2Head();
 
-            console.log('Deleting irrelevant matches...');
+            console.log('Deleting irrelevant matches and calculating matches outcomes...');
             await deleteRedundantMatches();
 
-            console.log("Calculating matches outcomes");
-            await updateMatchesOutcomes();
             resolve();
         } catch (error) {
             reject(error);
@@ -62,7 +60,12 @@ const saveMainMatches = (matches) => new Promise(
 const handleMatchesWithoutHead2Head = () => new Promise(
     async function (resolve, reject) {
         try {
-            const matchesWithoutH2H = await Match.find({ head2head: null, isMain: true });
+            const matchesWithoutH2H = await Match.find({
+                head2head: null,
+                isMain: true,
+                homeTeam: { $ne: null },
+                awayTeam: { $ne: null }
+            });
             const h2hToUpdate = await prepareMatchHeadToHead(matchesWithoutH2H);
             await H2H.bulkWrite(h2hToUpdate);
             resolve();
@@ -118,31 +121,5 @@ const saveH2HMatches = (matches) => new Promise(
         }
     }
 );
-
-const updateMatchesOutcomes = () => new Promise(
-    async function (resolve, reject) {
-        try {
-            const matches = await Match.find({
-                $and: [
-                    { utcDate: { $gt: startDate } },
-                    { utcDate: { $lte: endDate } }
-                ]
-            }).lean();
-
-            const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
-            const expandedMatches = await Promise.all(matchesToExpand);
-
-            const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
-            const matchesWithH2HandPrevMatches = await Promise.all(matchesToGetH2HandPrevMatches);
-
-            const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchOutcome);
-            const preparedMatches = matchesWithOutcome.map(prepareForBulkWrite);
-            await Match.bulkWrite(preparedMatches);
-            resolve()
-        } catch (error) {
-            reject(error);
-        }
-    }
-)
 
 module.exports = matchesHandler;
