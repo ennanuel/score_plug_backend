@@ -1,11 +1,13 @@
-const Match = require("../models/Match")
+const Match = require("../models/Match");
+const { changeMatchScoreFormat } = require("../utils/match");
 
-const refineMatchValues = ({ id, competition, homeTeam, awayTeam, ...match }) => ({
+const refineMatchValues = ({ id, competition, homeTeam, awayTeam, score, ...match }) => ({
     ...match,
     _id: id,
     competition: competition.id,
     homeTeam: homeTeam.id,
     awayTeam: awayTeam.id,
+    score: changeMatchScoreFormat(score)
 });
 
 const prepareForBulkWrite = (doc) => ({
