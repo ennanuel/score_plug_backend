@@ -66,7 +66,7 @@ function reduceMatchToUpdateSchedule(arrayOfUpdateSchedule, match) {
     return result;
 }
 
-const reduceToObjectWithIdAsKeys = (objectWithIds, object) => ({ ...objectWithIds, [object._id]: object });
+const reduceToObjectWithIdAsKeys = (objectWithIds, object) => ({ ...objectWithIds, [object._id || object.id]: object });
 
 module.exports = {
     reduceToObjectWithIdAsKey,
