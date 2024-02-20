@@ -1,12 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const RefereeSchema = Schema({
-    name: String,
-    type: String,
-    nationality: String
-});
-
 const matchSchema = Schema(
     {
         _id: Number,
@@ -55,9 +49,15 @@ const matchSchema = Schema(
             draw: Number,
             awayWin: Number
         },
-        referees: [RefereeSchema]
+        referees: [
+            {
+                name: String,
+                type: String,
+                nationality: String
+            }
+        ]
     },
     { timestamps: true }
-)
+);
 
 module.exports = mongoose.model('Match', matchSchema)
