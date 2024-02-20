@@ -5,6 +5,7 @@ const Competition = require('../../../models/Competition');
 const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
 const { prepareForBulkWrite, refineMatchValues } = require('../../../helpers/mongoose');
 const { checkIfCompetitionHasEnded } = require('../../../helpers/getDate');
+const { changeMatchScoreAndGetOutcome } = require('../../../utils/match');
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
@@ -51,6 +52,7 @@ const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promis
             const shouldFetchCompetitionMatches = await checkIfPreviousMatchesAlreadyExist({ currentSeason, competitionId: _id });
             if (shouldFetchCompetitionMatches) {
                 console.log('fetching %s previous matches', name);
+
                 const { currentMatchday } = currentSeason;
                 const getMatches = type === 'CUP' ?
                     fetchMatchesForCupCompetition({ competitionId: _id, limit: 50 }) :
@@ -60,6 +62,7 @@ const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promis
                     .map((match) => refineMatchValues({ ...match, isPrevMatch: true }))
                     .sort(sortByDate);
                 result.push(...sortedResult);
+
                 console.log('Gotten %s previous matches', name);
             }
             resolve(result);
