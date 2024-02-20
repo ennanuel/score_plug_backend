@@ -95,10 +95,12 @@ function calculateOutcomePercentage({ team1, team2, total }, [key1, key2]) {
     const totalFactors = firstFactor + secondFactor;
     const outcomePercentage = ((totalFactors * 100) / total).toFixed(2);
     return outcomePercentage;
-}
+};
+
+const getTotalMatchesPlayed = (match) => (match.head2head.aggregates.numberOfMatches * 4) + match.homeTeam.matchesPlayed + match.awayTeam.matchesPlayed;
 
 function getMatchOutcome(match) {
-    const totalMatchesPlayed = (match.head2head.aggregates.numberOfMatches * 4) + match.homeTeam.matchesPlayed + match.awayTeam.matchesPlayed;
+    const totalMatchesPlayed = getTotalMatchesPlayed(match);
     const homeTeam = { h2h: match.head2head.aggregates.homeTeam, prevMatches: match.homeTeam };
     const awayTeam = { h2h: match.head2head.aggregates.awayTeam, prevMatches: match.awayTeam };
     const homeWinOutcome = calculateOutcomePercentage({ team1: homeTeam, team2: awayTeam, total: totalMatchesPlayed }, ['wins', 'losses']);
@@ -159,11 +161,6 @@ function getMatchMinutesPassed({ status, utcDate, score }) {
         getExtraMatchTimeMinutes(minutesPassed);
 
     return matchMinutes;
-};
-
-function formatMatchToCorrectFormat(match) { 
-    const updatedMatchDetails = { ...match };
-    return Match.updateOne({ _id: match.id }, { $set: { updatedMatchDetails } });
 };
 
 const checkIfIsMainMatch = (matchDate) => (new Date(matchDate)).getTime() >= (new Date(getDateFrom())).getTime();
