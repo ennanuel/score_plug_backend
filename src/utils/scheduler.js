@@ -36,7 +36,7 @@ async function createUpdateSchedule() {
     }
 }; 
 
-async function updateSchedules() {
+function updateSchedules() {
     try {
         const { matchUpdateSchedule } = getScheduleJSON();
         const currentSchedule = matchUpdateSchedule.pop();
