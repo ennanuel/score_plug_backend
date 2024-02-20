@@ -3,6 +3,8 @@ const H2H = require('../../../models/H2H');
 const Team = require('../../../models/Team');
 const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails, reduceToArrayOfMatchIds } = require('../../../helpers/reduce');
 const { getDateFrom } = require("../../../helpers/getDate");
+const { expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome } = require('../../../utils/match');
+const { prepareForBulkWrite } = require('../../../helpers/mongoose');
         
 const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? { main: 'home', other: 'away' } : { main: 'away', other: 'home' };
 
@@ -18,6 +20,9 @@ const deleteRedundantMatches = () => new Promise(
 
             console.warn("Updating Team previous matches");
             await updateTeamPreviousMatches();
+
+            console.warn("Calculating match outcomes...");
+            await updateMatchesOutcomes();
             resolve();
         } catch (error) {
             reject(error);
@@ -116,26 +121,31 @@ async function updateHeadToHeadMatches() {
     const headToHeads = await H2H.find().lean();
 
     for (const headToHead of headToHeads) {
-        const matches = await Match.find({
-            $or: [
-                { homeTeam: headToHead.aggregates.homeTeam.id, awayTeam: headToHead.aggregates.awayTeam.id },
-                { awayTeam: headToHead.aggregates.homeTeam.id, homeTeam: headToHead.aggregates.awayTeam.id }
-            ],
-            status: 'FINISHED'
-        }).lean();
+        if (headToHead.aggregates) {
+            const matches = await Match.find({
+                $or: [
+                    { homeTeam: headToHead.aggregates.homeTeam.id, awayTeam: headToHead.aggregates.awayTeam.id },
+                    { awayTeam: headToHead.aggregates.homeTeam.id, homeTeam: headToHead.aggregates.awayTeam.id }
+                ],
+                status: 'FINISHED'
+            }).lean();
 
-        const initialValues = { numberOfMatches: 0, totalGoals: 0, homeTeam: 0, awayTeam: 0 };
-        const { numberOfMatches, totalGoals, homeTeam, awayTeam } = matches.reduce(reduceToH2HDetails, initialValues);
+            const initialValues = { numberOfMatches: 0, totalGoals: 0, homeTeam: 0, awayTeam: 0 };
+            const { numberOfMatches, totalGoals, homeTeam, awayTeam } = matches.reduce(reduceToH2HDetails, initialValues);
 
-        headToHead.numberOfMatches = numberOfMatches;
-        headToHead.totalGoals = totalGoals;
-        headToHead.homeTeam = homeTeam;
-        headToHead.awayTeam = awayTeam;
+            headToHead.numberOfMatches = numberOfMatches;
+            headToHead.totalGoals = totalGoals;
+            headToHead.homeTeam = homeTeam;
+            headToHead.awayTeam = awayTeam;
 
-        const matchIds = matches.map(match => match._id);
-        matchesToUpdate.push(...matchIds);
+            const matchIds = matches.map(match => match._id);
+            matchesToUpdate.push(...matchIds);
 
-        await H2H.findByIdAndUpdate(headToHead._id, { $set: { matches: matchIds } });
+            await H2H.findByIdAndUpdate(headToHead._id, { $set: { matches: matchIds } });
+        } else {
+            await H2H.findByIdAndDelete(headToHead._id);
+            await Match.updateMany({ head2head: headToHead._id }, { head2head: null });
+        }
     }
 
     return Match.updateMany({ _id: { $in: matchesToUpdate } }, { $set: { isHead2Head: true }});
@@ -151,7 +161,34 @@ async function deleteIrrelevantPreviousMatches() {
         if (matchPositions.some(position => position < 4)) continue;
         await Match.deleteOne({ _id: matchId });
     }
-}
+};
+
+
+const updateMatchesOutcomes = () => new Promise(
+    async function (resolve, reject) {
+        try {
+            const matches = await Match.find({
+                isMain: true,
+                head2head: { $ne: null },
+                homeTeam: { $ne: null },
+                awayTeam: { $ne: null }
+            }).lean();
+
+            const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
+            const expandedMatches = await Promise.all(matchesToExpand);
+
+            const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
+            const matchesWithH2HandPrevMatches = await Promise.all(matchesToGetH2HandPrevMatches);
+
+            const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchOutcome);
+            const preparedMatches = matchesWithOutcome.map(prepareForBulkWrite);
+            await Match.bulkWrite(preparedMatches);
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    }
+)
 
 async function getTeamMatches (team) {
     const teamPrevMatches = await Match.find(
