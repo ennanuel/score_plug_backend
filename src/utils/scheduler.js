@@ -71,9 +71,14 @@ function getTimeForNextUpdateCall() {
         if (!currentSchedule) throw new Error("Schedule is empty");
 
         const nextMinuteInMilliseconds = Date.now() + ONE_MINUTE_IN_MS;
+        const startOfCurrentSchedule = (new Date(currentSchedule.start)).getTime();
         const endOfCurrentSchedule = (new Date(currentSchedule.end)).getTime() + ONE_MINUTE_IN_MS;
-        const startOfNextSchedule = (new Date((matchUpdateSchedule.pop().start)));
-        const timeForNextCall = nextMinuteInMilliseconds <= endOfCurrentSchedule ? (nextMinuteInMilliseconds) : startOfNextSchedule;
+        const startOfNextSchedule = (new Date(matchUpdateSchedule.pop()?.start));
+        const timeForNextCall = nextMinuteInMilliseconds <= endOfCurrentSchedule && nextMinuteInMilliseconds >= startOfCurrentSchedule
+            ? nextMinuteInMilliseconds :
+            nextMinuteInMilliseconds < startOfCurrentSchedule ?
+            startOfCurrentSchedule :
+            startOfNextSchedule;
         const UTCDateForNextCall = (new Date(timeForNextCall)).toUTCString();
         return UTCDateForNextCall;
     } catch (error) {
