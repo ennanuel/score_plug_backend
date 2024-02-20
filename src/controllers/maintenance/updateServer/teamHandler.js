@@ -5,7 +5,6 @@ const Competition = require('../../../models/Competition');
 const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
 const { prepareForBulkWrite, refineMatchValues } = require('../../../helpers/mongoose');
 const { checkIfCompetitionHasEnded } = require('../../../helpers/getDate');
-const { changeMatchScoreAndGetOutcome } = require('../../../utils/match');
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
