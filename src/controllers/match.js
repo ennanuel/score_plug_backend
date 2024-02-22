@@ -87,12 +87,7 @@ async function getMatchPicks(req, res) {
         const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
         const expandedMatches = await Promise.all(matchesToExpand);
 
-        const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
-        const matchesWithH2HandPrevMatches = await Promise.all(matchesToGetH2HandPrevMatches);
-
-        const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchOutcome);
-
-        const result = { matches: matchesWithOutcome, totalPages: totalMatches, currentPage: pageNum };
+        const result = { matches: expandedMatches, totalPages: totalMatches, currentPage: pageNum };
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
@@ -100,23 +95,7 @@ async function getMatchPicks(req, res) {
     }
 };
 
-async function updateMatches (req, res) {
-    try {
-        const { from, to } = getFromToDates();
-        const previousMatches = await Match.find({ utcDate: { $gte: from, $lt: to } });
-        const matchIds = previousMatches.map(match => match._doc._id).join(',');
-        const response = await axios.get(`${process.env.FOOTBALL_API_URL}/matches?ids=${matchIds}`, { headers });
-        const currentMatches = response.data.matches;
-        await Promise.all(updateMatchStatusAndScore({ previousMatches, currentMatches }));
-        return res.status(200).json({ message: 'Matches updated' });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: error.message });
-    }
-};
-
 module.exports = {
-    updateMatches,
     getMatchDetails,
     getAllMatches,
     getMatchPicks
