@@ -1,16 +1,39 @@
+const MATCH_SCORE = {
+    duration: "REGULAR",
+    winner: null,
+    firstHalf: {
+        homeTeam: 1,
+        awayTeam: 3
+    },
+    secondHalf: {
+        homeTeam: null,
+        awayTeam: null,
+    },
+    fullTime: {
+        homeTeam: 1,
+        awayTeam: 3
+    }
+}
+
+const MATCH_OUTCOME = {
+    homeWin: 33.33,
+    draw: 33.33,
+    awayWin: 33.33
+}
+
 const MOCK_MATCHES = [
-    { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "FINISHED", utcDate: "01/21/2023" },
-    { _id: 126, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "FINISHED", utcDate: "02/21/2023" },
-    { _id: 129, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "FINISHED", utcDate: "01/23/2023" },
-    { _id: 132, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "IN_PLAY", utcDate: "01/23/2023" },
-    { _id: 135, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "IN_PLAY", utcDate: "01/23/2023" },
-    { _id: 138, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "IN_PLAY", utcDate: "01/23/2023" },
-    { _id: 141, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "PAUSED", utcDate: "01/23/2023" },
-    { _id: 144, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "UPCOMING", utcDate: "01/23/2023" },
-    { _id: 147, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "UPCOMING", utcDate: "01/24/2023" },
-    { _id: 150, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "CANCELLED", utcDate: "01/25/2023" },
-    { _id: 153, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "UPCOMING", utcDate: (new Date()).toLocaleDateString() },
-    { _id: 156, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "ONGOING", utcDate: (new Date()).toLocaleDateString() }
+    { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "FINISHED", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/21/2023" },
+    { _id: 126, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "FINISHED", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "02/21/2023" },
+    { _id: 129, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "FINISHED", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/23/2023" },
+    { _id: 132, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "IN_PLAY", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/23/2023" },
+    { _id: 135, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "IN_PLAY", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/23/2023" },
+    { _id: 138, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "IN_PLAY", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/23/2023" },
+    { _id: 141, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "PAUSED", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/23/2023" },
+    { _id: 144, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "UPCOMING", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/23/2023" },
+    { _id: 147, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "UPCOMING", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/24/2023" },
+    { _id: 150, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "CANCELLED", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: "01/25/2023" },
+    { _id: 153, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "UPCOMING", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: (new Date()).toLocaleDateString() },
+    { _id: 156, homeTeam: 200, awayTeam: 201, head2head: "200201", status: "ONGOING", score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: (new Date()).toLocaleDateString() }
 ];
 
 const TABLE = [
@@ -58,11 +81,11 @@ const MOCK_TEAMS = [
 ];
 
 const COMPETITION_MATCHES = [
-    { _id: 234, homeTeam: 235, awayTeam: 236, competition: 500 },
-    { _id: 334, homeTeam: 235, awayTeam: 236, competition: 501 },
-    { _id: 444, homeTeam: 235, awayTeam: 236, competition: 502 },
-    { _id: 554, homeTeam: 235, awayTeam: 236, competition: 503 },
-    { _id: 664, homeTeam: 235, awayTeam: 236, competition: 504 }
+    { _id: 234, homeTeam: 235, awayTeam: 236, competition: 500, score: MATCH_SCORE, outcome: MATCH_OUTCOME },
+    { _id: 334, homeTeam: 235, awayTeam: 236, competition: 501, score: MATCH_SCORE, outcome: MATCH_OUTCOME },
+    { _id: 444, homeTeam: 235, awayTeam: 236, competition: 502, score: MATCH_SCORE, outcome: MATCH_OUTCOME },
+    { _id: 554, homeTeam: 235, awayTeam: 236, competition: 503, score: MATCH_SCORE, outcome: MATCH_OUTCOME },
+    { _id: 664, homeTeam: 235, awayTeam: 236, competition: 504, score: MATCH_SCORE, outcome: MATCH_OUTCOME }
 ];
 
 const MATCH_IDS = COMPETITION_MATCHES.map(({ _id }) => _id);
@@ -78,6 +101,8 @@ const MOCK_COMPETITIONS = [
 ];
 
 module.exports = {
+    MATCH_SCORE,
+    MATCH_OUTCOME,
     MOCK_MATCHES,
     MOCK_COMPETITIONS,
     MOCK_TEAMS,
