@@ -7,6 +7,7 @@ const { checkServerScheduleDateAndStatus } = require('../../../helpers/getDate')
 async function runFunctionsToUpdateServer() {
     try { 
         resetScheduleJSON();
+        serverUpdateScheduleJSON("PENDING");
 
         console.log("starting Competitions...");
         await competitionHandler();

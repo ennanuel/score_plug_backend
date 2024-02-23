@@ -34,7 +34,7 @@ async function createUpdateSchedule() {
     }
 }; 
 
-function updateMatchSche(status) {
+function updateMatchSchedule(status) {
     try {
         const { match: { updateSchedule } } = getScheduleJSON();
         const currentSchedule = updateSchedule.pop();
@@ -142,14 +142,25 @@ function resetScheduleJSON() {
     } catch (error) {
         return { failed: true, message: error.message };
     }
-}
+};
+
+function checkIfServerIsUpdating() {
+    try {
+        const schedule = getScheduleJSON();
+        const serverUpdateStatus = schedule.server.status;
+        return serverUpdateStatus === 'PENDING';
+    } catch (error) {
+        throw error;
+    }
+};
 
 module.exports = {
     createUpdateSchedule,
-    updateMatchSche,
+    updateMatchSchedule,
     getScheduleJSON,
     setMatchScheduleJSON,
     resetScheduleJSON,
     serverUpdateScheduleJSON,
-    getTimeForNextUpdateCall
+    getTimeForNextUpdateCall,
+    checkIfServerIsUpdating
 }

@@ -4,10 +4,13 @@ const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 const Match = require("../../models/Match");
 
 const { changeMatchScoreFormat } = require("../../utils/match");
-const { getTimeForNextUpdateCall, updateMatchSchedule } = require("../../utils/scheduler");
+const { getTimeForNextUpdateCall, updateMatchSchedule, checkIfServerIsUpdating } = require("../../utils/scheduler");
 
 async function executeMatchUpdate() {
     try {
+        const serverIsUpdating = checkIfServerIsUpdating();
+        if (serverIsUpdating) throw new Error("Daily Server Update is running");
+
         const { matches } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/matches`);
         const matchIds = matches.map(match => match.id);
         const matchesObjectWithIdAsKey = matches.reduce(reduceToObjectWithIdAsKeys, {});
@@ -27,11 +30,9 @@ async function executeMatchUpdate() {
         await Promise.all(matchesToSave);
         
         updateMatchSchedule('SUCCESS');
-
         console.log("Matches Updated!");
     } catch (error) {
         updateMatchSchedule('FAILED');
-        
         console.error(error.message);
     }
 }
