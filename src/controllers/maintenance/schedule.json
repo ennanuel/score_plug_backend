@@ -1,9 +1,11 @@
 {
-  "lastUpdated": "Tue, 20 Feb 2024 09:53:42 GMT",
-  "matchUpdateSchedule": [
-    {
-      "start": "Tue, 20 Feb 2024 19:30:00 GMT",
-      "end": "Wed, 21 Feb 2024 00:18:00 GMT"
-    }
-  ]
+  "matches": {
+    "lastUpdated": null,
+    "status": null,
+    "updateSchedule": []
+  },
+  "server": {
+    "lastUpdated": null,
+    "status": null
+  }
 }

@@ -4,7 +4,7 @@ const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 const Match = require("../../models/Match");
 
 const { changeMatchScoreFormat } = require("../../utils/match");
-const { getTimeForNextUpdateCall, updateSchedules } = require("../../utils/scheduler");
+const { getTimeForNextUpdateCall, updateMatchSchedule } = require("../../utils/scheduler");
 
 async function executeMatchUpdate() {
     try {
@@ -25,8 +25,13 @@ async function executeMatchUpdate() {
         };
 
         await Promise.all(matchesToSave);
+        
+        updateMatchSchedule('SUCCESS');
+
         console.log("Matches Updated!");
     } catch (error) {
+        updateMatchSchedule('FAILED');
+        
         console.error(error.message);
     }
 }
@@ -34,9 +39,6 @@ async function executeMatchUpdate() {
 function updateMatches(req, res) {
     try {
         executeMatchUpdate();
-
-        const { failed, message } = updateSchedules();
-        if (failed) throw new Error(message);
 
         const nextUpdateCallTime = getTimeForNextUpdateCall();
         return res.status(200).json({ message: `Match update started`, nextCall: nextUpdateCallTime });

@@ -1,18 +1,16 @@
 const fs = require("fs");
-const { getTodayDate, getTommorowDate } = require("../helpers/getDate");
+const { getTodayDate, getTommorowDate, checkMatchScheduleDate } = require("../helpers/getDate");
 const { reduceMatchToUpdateSchedule } = require("../helpers/reduce");
 const Match = require("../models/Match");
 const path = require("path");
 const { ONE_MINUTE_IN_MS } = require("../constants");
-
-const checkScheduleDate = (scheduleDate) => (new Date(scheduleDate)).toLocaleDateString() === (new Date()).toLocaleDateString();
 
 const schedulePath = path.join(__dirname, "../controllers/maintenance/schedule.json");
 
 async function createUpdateSchedule() { 
     try {
         const currentSchedule = getScheduleJSON();
-        const isToday = checkScheduleDate(currentSchedule.lastUpdated);
+        const isToday = checkMatchScheduleDate(currentSchedule.lastUpdated);
 
         if (isToday) throw new Error("Schedule for today has already been created");
 
@@ -27,7 +25,7 @@ async function createUpdateSchedule() {
         }).sort({ utcDate: 1 }).lean();
         
         const matchesSchedule = matchesToBePlayedToday.reduce(reduceMatchToUpdateSchedule, []);
-        const { failed, message } = setScheduleJSON(matchesSchedule);
+        const { failed, message } = setMatchScheduleJSON(matchesSchedule, null);
         if (failed) throw new Error(message);
 
         return { failed: false, message: "Schedule Created" };
@@ -36,16 +34,16 @@ async function createUpdateSchedule() {
     }
 }; 
 
-function updateSchedules() {
+function updateMatchSche(status) {
     try {
-        const { matchUpdateSchedule } = getScheduleJSON();
-        const currentSchedule = matchUpdateSchedule.pop();
+        const { match: { updateSchedule } } = getScheduleJSON();
+        const currentSchedule = updateSchedule.pop();
         const timeInMilliseconds = Date.now();
         const scheduleTimeInMilliseconds = (new Date(currentSchedule.end)).getTime();
 
-        if (scheduleTimeInMilliseconds >= timeInMilliseconds) matchUpdateSchedule.push(currentSchedule);
+        if (scheduleTimeInMilliseconds >= timeInMilliseconds) updateSchedule.push(currentSchedule);
 
-        const { failed, message } = setScheduleJSON(matchUpdateSchedule);
+        const { failed, message } = setMatchScheduleJSON(updateSchedule, status);
         if (failed) throw new Error(message);
 
         return { failed: false, message: "Schedule Updated" };
@@ -66,14 +64,14 @@ function getScheduleJSON() {
 
 function getTimeForNextUpdateCall() {
     try {
-        const { matchUpdateSchedule } = getScheduleJSON();
-        const currentSchedule = matchUpdateSchedule.pop();
+        const { matches: updateSchedule } = getScheduleJSON();
+        const currentSchedule = updateSchedule.pop();
         if (!currentSchedule) throw new Error("Schedule is empty");
 
         const nextMinuteInMilliseconds = Date.now() + ONE_MINUTE_IN_MS;
         const startOfCurrentSchedule = (new Date(currentSchedule.start)).getTime();
         const endOfCurrentSchedule = (new Date(currentSchedule.end)).getTime() + ONE_MINUTE_IN_MS;
-        const startOfNextSchedule = (new Date(matchUpdateSchedule.pop()?.start));
+        const startOfNextSchedule = (new Date(updateSchedule.pop()?.start));
         const timeForNextCall = nextMinuteInMilliseconds <= endOfCurrentSchedule && nextMinuteInMilliseconds >= startOfCurrentSchedule
             ? nextMinuteInMilliseconds :
             nextMinuteInMilliseconds < startOfCurrentSchedule ?
@@ -87,18 +85,37 @@ function getTimeForNextUpdateCall() {
     }
 }
 
-function setScheduleJSON(schedule) { 
+function setMatchScheduleJSON(schedule, status) { 
     try {
         const scheduleRawData = fs.readFileSync(schedulePath);
         const scheduleJSONData = JSON.parse(scheduleRawData);
 
-        scheduleJSONData.lastUpdated = (new Date()).toUTCString();
-        scheduleJSONData.matchUpdateSchedule = schedule;
+        if (schedule) scheduleJSONData.matches.updateSchedule = schedule;
+
+        scheduleJSONData.matches.status = status;
+        scheduleJSONData.matches.lastUpdated = (new Date()).toUTCString();
 
         const updatedData = JSON.stringify(scheduleJSONData, null, 2);
         
         fs.writeFileSync(schedulePath, updatedData);
-        return { failed: false, message: "Schedule Updated" };
+        return { failed: false, message: "Natch Schedule Updated" };
+    } catch (error) {
+        return { failed: true, message: error.message };
+    }
+}
+
+function serverUpdateScheduleJSON(status) { 
+    try {
+        const scheduleRawData = fs.readFileSync(schedulePath);
+        const scheduleJSONData = JSON.parse(scheduleRawData);
+
+        scheduleJSONData.server.status = status;
+        scheduleJSONData.server.lastUpdated = (new Date()).toUTCString();
+
+        const updatedData = JSON.stringify(scheduleJSONData, null, 2);
+        
+        fs.writeFileSync(schedulePath, updatedData);
+        return { failed: false, message: "Server Schedule Updated" };
     } catch (error) {
         return { failed: true, message: error.message };
     }
@@ -106,12 +123,21 @@ function setScheduleJSON(schedule) {
 
 function resetScheduleJSON() { 
     try {
-        const scheduleData = {
-            lastUpdated: null,
-            matchUpdateSchedule: []
+        const resetDataObject = {
+            matches: {
+                lastUpdated: null,
+                status: null,
+                updateSchedule: []
+            },
+            server: {
+                lastUpdated: null,
+                status: null
+            }
         };
-        const resetData = JSON.stringify(scheduleData, null, 2);
+        const resetData = JSON.stringify(resetDataObject, null, 2);
+
         fs.writeFileSync(schedulePath, resetData);
+
         return { failed: false, message: "Schedule Reset" };
     } catch (error) {
         return { failed: true, message: error.message };
@@ -120,9 +146,10 @@ function resetScheduleJSON() {
 
 module.exports = {
     createUpdateSchedule,
-    updateSchedules,
+    updateMatchSche,
     getScheduleJSON,
-    setScheduleJSON,
+    setMatchScheduleJSON,
     resetScheduleJSON,
+    serverUpdateScheduleJSON,
     getTimeForNextUpdateCall
 }
