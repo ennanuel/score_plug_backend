@@ -165,6 +165,13 @@ function getMatchMinutesPassed({ status, utcDate, score }) {
     return matchMinutes;
 };
 
+function resolveMatchTimeFormat(match) {
+    const matchWithTimeFormat = { ...match };
+    matchWithTimeFormat.timeRemaining = getTimeRemainingForGameToStart(match.utcDate);
+    matchWithTimeFormat.minutes = getMatchMinutesPassed(match);
+    return matchWithTimeFormat;
+}
+
 const checkIfIsMainMatch = (matchDate) => (new Date(matchDate)).getTime() >= (new Date(getDateFrom())).getTime();
 
 module.exports = {
@@ -177,5 +184,6 @@ module.exports = {
     getMatchOutcome,
     changeMatchScoreFormat,
     getTimeRemainingForGameToStart,
-    getMatchMinutesPassed
+    getMatchMinutesPassed,
+    resolveMatchTimeFormat
 }
