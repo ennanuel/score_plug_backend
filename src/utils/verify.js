@@ -3,6 +3,7 @@ function verifyAuthToken(req, res, next) {
         const headers = req.headers;
         const authToken = headers['auth-token'];
 
+        console.log(authToken, process.env.AUTH_TOKEN);
         if (authToken !== process.env.AUTH_TOKEN) throw new Error("You are not authorized!");
         
         next();
