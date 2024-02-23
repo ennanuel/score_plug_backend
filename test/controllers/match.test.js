@@ -4,7 +4,7 @@ const Match = require('../../src/models/Match');
 const Team = require("../../src/models/Team");
 const H2H = require("../../src/models/H2H");
 const Competition = require("../../src/models/Competition");
-const { MOCK_MATCHES } = require('../mocks/constants');
+const { MOCK_MATCHES, MATCH_SCORE, MATCH_OUTCOME } = require('../mocks/constants');
 
 jest.mock('../../src/models/Match');
 jest.mock("../../src/models/Team");
@@ -15,8 +15,8 @@ describe("Testing Match Route that fetches a single match from the Database", ()
     it('should return details of a match', async () => {
         Match.find.mockImplementation((filter) => ({
             lean: jest.fn().mockResolvedValue([
-                { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "124125", competition: 2345 },
-                { _id: 234, homeTeam: 200, awayTeam: 201, head2head: "234567", competition: 2345 },
+                { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "124125", competition: 2345, score: MATCH_SCORE, outcome: MATCH_OUTCOME },
+                { _id: 234, homeTeam: 200, awayTeam: 201, head2head: "234567", competition: 2345, score: MATCH_SCORE, outcome: MATCH_OUTCOME },
             ])
         }));
         Team.find.mockImplementation((filter) => ({
@@ -26,7 +26,7 @@ describe("Testing Match Route that fetches a single match from the Database", ()
             ])
         }));
         Match.findById.mockImplementation((id) => ({
-            lean: jest.fn().mockResolvedValue({ _id: 123, homeTeam: 200, awayTeam: 201, head2head: "124125", competition: 2345 })
+            lean: jest.fn().mockResolvedValue({ _id: 123, homeTeam: 200, awayTeam: 201, head2head: "124125", competition: 2345, score: MATCH_SCORE, outcome: MATCH_OUTCOME })
         }));
         H2H.findById.mockImplementation((id) => ({
             lean: jest.fn().mockResolvedValue({ _id: "124125", aggregates: { homeTeam: { id: 124 }, awayTeam: { id: 125 } }, matches: [12345, 12346] })
@@ -155,10 +155,10 @@ describe("Testing Match Route that fetches a matches from the Database, with the
 
 describe("Testing Match Route that fetches a matches from the Database, and returns the matches and their outcomes", () => {
     const matches = [
-        { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2345, utcDate: (new Date()).toLocaleDateString() },
-        { _id: 124, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2346, utcDate: (new Date()).toLocaleDateString() },
-        { _id: 125, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2347, utcDate: (new Date()).toLocaleDateString() },
-        { _id: 126, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2348, utcDate: (new Date()).toLocaleDateString() }
+        { _id: 123, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2345, score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: (new Date()).toLocaleDateString() },
+        { _id: 124, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2346, score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: (new Date()).toLocaleDateString() },
+        { _id: 125, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2347, score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: (new Date()).toLocaleDateString() },
+        { _id: 126, homeTeam: 200, awayTeam: 201, head2head: "200201", competition: 2348, score: MATCH_SCORE, outcome: MATCH_OUTCOME, utcDate: (new Date()).toLocaleDateString() }
     ];
     const matchFilterFunction = (filter) => ({
         limit: (limit) => ({
@@ -206,5 +206,3 @@ describe("Testing Match Route that fetches a matches from the Database, and retu
         expect(totalOutcomePercentage).toBe(100);
     });
 })
-
-afterAll(async () => {});

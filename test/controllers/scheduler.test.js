@@ -1,5 +1,5 @@
 const Match = require("../../src/models/Match");
-const { createUpdateSchedule, getScheduleJSON, setScheduleJSON, resetScheduleJSON } = require("../../src/utils/scheduler");
+const { createUpdateSchedule, getScheduleJSON, setMatchScheduleJSON, resetScheduleJSON } = require("../../src/utils/scheduler");
 
 jest.mock("../../src/models/Match");
 
@@ -15,11 +15,12 @@ describe("Test for scheduler function", () => {
                 end: "End Date"
             }
         ];
-        setScheduleJSON(newSchedule);
+        setMatchScheduleJSON(newSchedule, 'SUCCESS');
 
         const udpatedScheduleJSON = getScheduleJSON();
-        expect(udpatedScheduleJSON.matchUpdateSchedule.length).toBe(2);
-        resetScheduleJSON()
+        expect(udpatedScheduleJSON.matches.updateSchedule.length).toBe(2);
+        expect(udpatedScheduleJSON.matches.status).toBe('SUCCESS');
+        resetScheduleJSON();
     });
 
     it("Should return an array of the schedules of the matches should be updated", async () => { 
@@ -40,10 +41,10 @@ describe("Test for scheduler function", () => {
 
         await createUpdateSchedule();
         const schedule = getScheduleJSON();
-        const startTime = (new Date(schedule.matchUpdateSchedule[0].start)).toLocaleTimeString();
-        const endTime = (new Date(schedule.matchUpdateSchedule[1].end)).toLocaleTimeString();
+        const startTime = (new Date(schedule.matches.updateSchedule[0].start)).toLocaleTimeString();
+        const endTime = (new Date(schedule.matches.updateSchedule[1].end)).toLocaleTimeString();
 
-        expect(schedule.matchUpdateSchedule.length).toBe(3);
+        expect(schedule.matches.updateSchedule.length).toBe(3);
         expect(startTime).toBe("11:00:00 AM");
         expect(endTime).toBe("10:18:00 AM");
         resetScheduleJSON();
