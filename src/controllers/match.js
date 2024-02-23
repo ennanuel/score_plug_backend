@@ -5,7 +5,7 @@ const H2H = require('../models/H2H');
 const { headers } = require('../constants');
 
 const { getFromToDates } = require("../helpers/getDate")
-const { createMatchFilterRegExp, updateMatchStatusAndScore, expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome } = require('../utils/match');
+const { createMatchFilterRegExp, expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, resolveMatchTimeFormat } = require('../utils/match');
 const { convertToNumber } = require('../helpers');
 
 async function getMatchDetails(req, res) {
@@ -17,8 +17,9 @@ async function getMatchDetails(req, res) {
 
         const expandedMatch = await expandMatchTeamsAndCompetition(match);
         const matchWithH2HAndPrevMatches = await getMatchHead2HeadAndPreviousMatches(expandedMatch);
+        const matchWithCompleteData = resolveMatchTimeFormat(matchWithH2HAndPrevMatches);
 
-        return res.status(200).json(matchWithH2HAndPrevMatches);
+        return res.status(200).json(matchWithCompleteData);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: error.message });
@@ -53,8 +54,9 @@ async function getAllMatches (req, res) {
 
         const matchesToExpand = matches.map(expandMatchTeamsAndCompetition)
         const expandedMatches = await Promise.all(matchesToExpand);
+        const matchesWithCompleteData = expandedMatches.map(resolveMatchTimeFormat);
 
-        const result = { matches: expandedMatches, totalPages: totalMatches, currentPage: pageNum };
+        const result = { matches: matchesWithCompleteData, totalPages: totalMatches, currentPage: pageNum };
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
@@ -86,8 +88,9 @@ async function getMatchPicks(req, res) {
 
         const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
         const expandedMatches = await Promise.all(matchesToExpand);
+        const matchesWithCompleteData = expandedMatches.map(resolveMatchTimeFormat);
 
-        const result = { matches: expandedMatches, totalPages: totalMatches, currentPage: pageNum };
+        const result = { matches: matchesWithCompleteData, totalPages: totalMatches, currentPage: pageNum };
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
