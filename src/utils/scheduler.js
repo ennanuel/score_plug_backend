@@ -36,18 +36,23 @@ async function createUpdateSchedule() {
 
 function updateMatchSchedule(status) {
     try {
-        const { match: { updateSchedule } } = getScheduleJSON();
-        const currentSchedule = updateSchedule.pop();
-        const timeInMilliseconds = Date.now();
-        const scheduleTimeInMilliseconds = (new Date(currentSchedule.end)).getTime();
+        const schedule = getScheduleJSON();
+        const updateSchedule = schedule.matches.updateSchedule;
+        
+        if (updateSchedule.length > 0) {
+            const currentSchedule = updateSchedule.pop();
+            const timeInMilliseconds = Date.now();
+            const scheduleTimeInMilliseconds = (new Date(currentSchedule.end)).getTime();
 
-        if (scheduleTimeInMilliseconds >= timeInMilliseconds) updateSchedule.push(currentSchedule);
+            if (scheduleTimeInMilliseconds >= timeInMilliseconds) updateSchedule.push(currentSchedule);
+        }
 
         const { failed, message } = setMatchScheduleJSON(updateSchedule, status);
         if (failed) throw new Error(message);
 
         return { failed: false, message: "Schedule Updated" };
     } catch (error) {
+        console.error(error);
         return { failed: true, message: error.message };
     }
 };
@@ -64,9 +69,12 @@ function getScheduleJSON() {
 
 function getTimeForNextUpdateCall() {
     try {
-        const { matches: updateSchedule } = getScheduleJSON();
+        const schedule = getScheduleJSON();
+        const updateSchedule = schedule.matches.updateSchedule;
+        
+        if (updateSchedule.length < 1) throw new Error("Schedule is empty");
+
         const currentSchedule = updateSchedule.pop();
-        if (!currentSchedule) throw new Error("Schedule is empty");
 
         const nextMinuteInMilliseconds = Date.now() + ONE_MINUTE_IN_MS;
         const startOfCurrentSchedule = (new Date(currentSchedule.start)).getTime();
