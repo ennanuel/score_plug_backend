@@ -11,6 +11,7 @@ async function executeMatchUpdate() {
         const serverIsUpdating = checkIfServerIsUpdating();
         if (serverIsUpdating) throw new Error("Daily Server Update is running");
 
+        var status;
         const { matches } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/matches`);
         const matchIds = matches.map(match => match.id);
         const matchesObjectWithIdAsKey = matches.reduce(reduceToObjectWithIdAsKeys, {});
@@ -27,13 +28,15 @@ async function executeMatchUpdate() {
             matchesToSave.push(match.save());
         };
 
-        await Promise.all(matchesToSave);
+        const updatedMatches = await Promise.all(matchesToSave);
+        console.log("%s Matches Updated!", updatedMatches.length);
         
-        updateMatchSchedule('SUCCESS');
-        console.log("Matches Updated!");
+        status = 'SUCCESS';
     } catch (error) {
-        updateMatchSchedule('FAILED');
         console.error(error.message);
+        status = 'FAILED';
+    } finally {
+        updateMatchSchedule(status);
     }
 }
 
