@@ -171,7 +171,12 @@ const updateMatchesOutcomes = () => new Promise(
                 isMain: true,
                 head2head: { $ne: null },
                 homeTeam: { $ne: null },
-                awayTeam: { $ne: null }
+                awayTeam: { $ne: null },
+                outcome: {
+                    homeWin: { $not: { $gte: 0 } },
+                    awayWin: { $not: { $gte: 0 } },
+                    draw: { $not: { $gte: 0 } }
+                }
             }).lean();
 
             const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
