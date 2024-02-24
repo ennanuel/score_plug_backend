@@ -28,7 +28,7 @@ async function getMatchDetails(req, res) {
 
 async function getAllMatches (req, res) {
     try {
-        const { status, from, to, page = 9, limit = 5 } = req.query;
+        const { status, from, to, page = 0, limit = 5 } = req.query;
 
         const limitNum = convertToNumber(limit);
         const pageNum = convertToNumber(page);
@@ -66,7 +66,7 @@ async function getAllMatches (req, res) {
 
 async function getMatchPicks(req, res) {
     try {
-        const { from, to, limit, page } = req.query;
+        const { from, to, limit = 5, page = 0 } = req.query;
         const { startDate, endDate } = getFromToDates(from, to);
 
         const limitNum = convertToNumber(limit);
