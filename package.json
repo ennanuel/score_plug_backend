@@ -7,7 +7,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js --ignore src/controllers/maintenance/schedule.json"
   },
   "jest": {
     "testEnvironment": "node"
