@@ -13,7 +13,7 @@ const {
 const { getDateFrom } = require("../helpers/getDate");
 const { getRegularMatchMinutes, getExtraMatchTimeMinutes } = require('../helpers');
 
-const getCompetition = (competitionId) => Competition.findById(competitionId).lean();
+const getCompetition = (competitionId) => Competition.findById(competitionId, 'area name emblem').lean();
 
 function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
     const matchesToUpdate = [];
@@ -36,7 +36,7 @@ function createMatchFilterRegExp(filter) {
 };
 
 async function getMatchWithTeamData(match) {
-    const teams = await Team.find({ _id: { $in: [match.homeTeam, match.awayTeam] } }).lean();
+    const teams = await Team.find({ _id: { $in: [match.homeTeam, match.awayTeam] } }, 'area name shortName tla crest').lean();
     const [homeTeam, awayTeam] = teams.sort((team) => team._id == match.homeTeam ? -1 : 1);
     const newMatchData = { ...match, homeTeam, awayTeam };
     return newMatchData;
