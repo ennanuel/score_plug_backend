@@ -1,8 +1,4 @@
-const axios = require('axios');
 const Match = require('../models/Match');
-const H2H = require('../models/H2H');
-
-const { headers } = require('../constants');
 
 const { getFromToDates } = require("../helpers/getDate")
 const { createMatchFilterRegExp, expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, resolveMatchTimeFormat } = require('../utils/match');
@@ -11,7 +7,7 @@ const { convertToNumber } = require('../helpers');
 async function getMatchDetails(req, res) {
     try {
         const { matchId } = req.params;
-        const match = await Match.findById(matchId).lean();
+        const match = await Match.findById(matchId, { isMain: 0, isPrevMatch: 0, isHead2Head: 0 }).lean();
 
         if (!match) throw new Error('No matches found');
 
@@ -36,13 +32,16 @@ async function getAllMatches (req, res) {
         const statusRegExp = createMatchFilterRegExp(status);
         const { startDate, endDate } = getFromToDates(from, to);
 
-        const matches = await Match.find({
-            $and: [
-                { status: { $regex: statusRegExp } },
-                { utcDate: { $gte: startDate } },
-                { utcDate: { $lte: endDate } }
-            ]
-        }).limit(limitNum).skip(limitNum * pageNum).lean();
+        const matches = await Match.find(
+            {
+                $and: [
+                    { status: { $regex: statusRegExp } },
+                    { utcDate: { $gte: startDate } },
+                    { utcDate: { $lte: endDate } }
+                ]
+            },
+            { isMain: 0, isPrevMatch: 0, isHead2Head: 0, outcome: 0 }
+        ).limit(limitNum).skip(limitNum * pageNum).lean();
 
         const totalMatches = await Match.find({
             $and: [
@@ -56,7 +55,8 @@ async function getAllMatches (req, res) {
         const expandedMatches = await Promise.all(matchesToExpand);
         const matchesWithCompleteData = expandedMatches.map(resolveMatchTimeFormat);
 
-        const result = { matches: matchesWithCompleteData, totalPages: totalMatches, currentPage: pageNum };
+        const totalPages = Math.ceil(totalMatches / limitNum);
+        const result = { matches: matchesWithCompleteData, totalPages, currentPage: pageNum };
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
@@ -72,12 +72,15 @@ async function getMatchPicks(req, res) {
         const limitNum = convertToNumber(limit);
         const pageNum = convertToNumber(page);
 
-        const matches = await Match.find({
-            $and: [
-                { utcDate: { $gt: startDate } },
-                { utcDate: { $lte: endDate } }
-            ]
-        }).limit(limitNum).skip(pageNum * limitNum).lean();
+        const matches = await Match.find(
+            {
+                $and: [
+                    { utcDate: { $gt: startDate } },
+                    { utcDate: { $lte: endDate } }
+                ]
+            },
+            { isMain: 0, isPrevMatch: 0, isHead2Head: 0 }
+        ).limit(limitNum).skip(pageNum * limitNum).lean();
 
         const totalMatches = await Match.find({
             $and: [
@@ -90,7 +93,8 @@ async function getMatchPicks(req, res) {
         const expandedMatches = await Promise.all(matchesToExpand);
         const matchesWithCompleteData = expandedMatches.map(resolveMatchTimeFormat);
 
-        const result = { matches: matchesWithCompleteData, totalPages: totalMatches, currentPage: pageNum };
+        const totalPages = Math.ceil(totalMatches / limitNum);
+        const result = { matches: matchesWithCompleteData, totalPages, currentPage: pageNum };
         return res.status(200).json(result);
     } catch (error) {
         console.error(error);
