@@ -30,7 +30,7 @@ const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
 
 const checkMatchScheduleDate = (scheduleDate) => (new Date(scheduleDate)).toLocaleDateString() === (new Date()).toLocaleDateString();
 
-const checkServerScheduleDateAndStatus = (scheduleDate, status) => Date.now() - (new Date(scheduleDate)).getTime() > ONE_DAY_IN_MS && status === 'SUCCESS';
+const checkServerScheduleDateAndStatus = (scheduleDate, status) => (Date.now() - (new Date(scheduleDate)).getTime()) < ONE_DAY_IN_MS && status === 'SUCCESS';
 
 module.exports = {
     getYesterdayDate,
