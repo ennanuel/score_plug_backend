@@ -359,7 +359,13 @@ const RootQuery = new GraphQLObjectType({
                     matches: { type: new GraphQLList(MatchType) },
                     totalMatches: { type: GraphQLFloat },
                     limit: { type: GraphQLFloat },
-                    page: { type: GraphQLFloat }
+                    page: { type: GraphQLFloat },
+                    totalPages: {
+                        type: GraphQLFloat,
+                        resolve(parent, args) {
+                            return Math.ceil(parent.totalMatches / limit)
+                        }
+                    }
                 })
             }),
             args: {
@@ -408,7 +414,13 @@ const RootQuery = new GraphQLObjectType({
                     competitions: { type: new GraphQLList(CompetitionType) },
                     totalCompetitions: { type: GraphQLFloat },
                     page: { type: GraphQLFloat },
-                    limit: { type: GraphQLFloat }
+                    limit: { type: GraphQLFloat },
+                    totalPages: {
+                        type: GraphQLFloat,
+                        resolve(parent, args) {
+                            return Math.ceil(parent.totalCompetitions / limit)
+                        }
+                    }
                 })
             }),
             args: { 
@@ -436,7 +448,13 @@ const RootQuery = new GraphQLObjectType({
                     teams: { type: new GraphQLList(TeamType) },
                     totalTeams: { type: GraphQLFloat },
                     page: { type: GraphQLFloat },
-                    limit: { type: GraphQLFloat }
+                    limit: { type: GraphQLFloat },
+                    totalPages: {
+                        type: GraphQLFloat,
+                        resolve(parent, args) {
+                            return Math.ceil(parent.totalTeams / limit)
+                        }
+                    }
                 })
             }),
             args: {
