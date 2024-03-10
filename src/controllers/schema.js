@@ -1,10 +1,12 @@
 const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLBoolean, GraphQLSchema, GraphQLFloat, GraphQLList } = require('graphql');
+
 const Match = require('../models/Match');
 const Team = require("../models/Team");
 const Player = require("../models/Player");
 const H2H = require("../models/H2H");
 const Competition = require("../models/Competition");
-const { getTimeRemainingForGameToStart, createMatchFilterRegExp } = require('../utils/match');
+
+const { getTimeRemainingForGameToStart, getMatchMinutesPassed, createMatchFilterRegExp } = require('../utils/match');
 const { getFromToDates } = require('../helpers/getDate');
 
 const RefereeType = new GraphQLObjectType({
@@ -135,7 +137,7 @@ const TeamType = new GraphQLObjectType({
                 });
             }
         },
-        competitions: {
+        competitions : {
             type: new GraphQLList(CompetitionType),
             resolve(parent, args) {
                 return Competition.find({ teams: { $in: parent._id } }, 'standings name emblem _id');
