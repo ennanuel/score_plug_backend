@@ -363,6 +363,7 @@ const RootQuery = new GraphQLObjectType({
                     totalPages: {
                         type: GraphQLFloat,
                         resolve(parent, args) {
+                            console.log(parent.totalMatches, parent.limit);
                             return Math.ceil(parent.totalMatches / parent.limit)
                         }
                     }
