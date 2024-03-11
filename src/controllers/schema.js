@@ -363,7 +363,7 @@ const RootQuery = new GraphQLObjectType({
                     totalPages: {
                         type: GraphQLFloat,
                         resolve(parent, args) {
-                            return Math.ceil(parent.totalMatches / limit)
+                            return Math.ceil(parent.totalMatches / parent.limit)
                         }
                     }
                 })
@@ -418,7 +418,7 @@ const RootQuery = new GraphQLObjectType({
                     totalPages: {
                         type: GraphQLFloat,
                         resolve(parent, args) {
-                            return Math.ceil(parent.totalCompetitions / limit)
+                            return Math.ceil(parent.totalCompetitions / parent.limit)
                         }
                     }
                 })
@@ -452,7 +452,7 @@ const RootQuery = new GraphQLObjectType({
                     totalPages: {
                         type: GraphQLFloat,
                         resolve(parent, args) {
-                            return Math.ceil(parent.totalTeams / limit)
+                            return Math.ceil(parent.totalTeams / parent.limit)
                         }
                     }
                 })
