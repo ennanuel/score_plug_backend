@@ -270,7 +270,7 @@ const HeadToHeadType = new GraphQLObjectType({
             })
         },
         matches: {
-            type: MatchType,
+            type: new GraphQLList(MatchType),
             args: { 
                 status: { type: GraphQLString },
                 from: { type: GraphQLString },
@@ -280,7 +280,7 @@ const HeadToHeadType = new GraphQLObjectType({
                 const { status, from, to } = args;
                 const { startDate, endDate } = getFromToDates(from, to);
                 return Match.find({
-                    _id: { $in: parent.matches }
+                    _id: { $in: parent.matches },
                 });
             }
         }
@@ -416,9 +416,10 @@ const RootQuery = new GraphQLObjectType({
                     page: { type: GraphQLFloat },
                     limit: { type: GraphQLFloat },
                     totalPages: {
-                        type: GraphQLFloat,
+                        type: new GraphQLObjectType({ competitions: { type: GraphQLFloat }, limit: { type: GraphQLFloat } }),
                         resolve(parent, args) {
-                            return Math.ceil(parent.totalCompetitions / parent.limit)
+                            return { competitions: parent.totalCompetitions, limit: parent.limit };
+                            return Math.ceil(parent.totalCompetitions / parent.limit);
                         }
                     }
                 })
