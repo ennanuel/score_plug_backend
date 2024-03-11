@@ -416,7 +416,12 @@ const RootQuery = new GraphQLObjectType({
                     page: { type: GraphQLFloat },
                     limit: { type: GraphQLFloat },
                     totalPages: {
-                        type: new GraphQLObjectType({ competitions: { type: GraphQLFloat }, limit: { type: GraphQLFloat } }),
+                        type: new GraphQLObjectType({
+                            name: "Totalpages",
+                            fields: () => ({
+                                competitions: { type: GraphQLFloat }, limit: { type: GraphQLFloat }
+                            })
+                        }),
                         resolve(parent, args) {
                             return { competitions: parent.totalCompetitions, limit: parent.limit };
                             return Math.ceil(parent.totalCompetitions / parent.limit);
