@@ -19,19 +19,24 @@ const competitionHandler = () => new Promise(
     }
 );
 
-const changeCompetitionName = ({ name, code, ...competition }) => ({ ...competition, ...(COMPETITION_RANKINGS.find(comp => comp.code === code) || { name, code }) });
+const prepareCompetitionForUpload = ({ id, name, code, currentSeason, ...competition }) => {
+    const newCompetitionNameAndCode = COMPETITION_RANKINGS.find(comp => comp.code === code);
+    const result = { ...competition, ...newCompetitionNameAndCode };
+    result._id = id;
+    result.currentSeason = { ...currentSeason, winner: currentSeason.winner?.id };
+    return result;
+}
 
 const getCompetitions = () => new Promise(
     async function (resolve, reject) {
         try {
-            let competitions = await Competition.find();
-            if (competitions.length <= 0) {
-                const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions`);
-                const newCompetitions = result.competitions.map(comp => ({ ...comp, _id: comp.id, currentSeason: { ...comp.currentSeason, winner: comp.currentSeason.winner?.id } }));
-                const competitionsWithNewName = newCompetitions.map(changeCompetitionName);
-                competitions = await Competition.insertMany(competitionsWithNewName);
+            let DBCompetitions = await Competition.find();
+            if (DBCompetitions.length <= 0) {
+                const { competitions } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions`);
+                const preparedCompetitions = competitions.map(prepareCompetitionForUpload);
+                DBCompetitions = await Competition.insertMany(preparedCompetitions);
             };
-            resolve(competitions);
+            resolve(DBCompetitions);
         } catch (error) {
             reject(error);
         }
