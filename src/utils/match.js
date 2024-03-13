@@ -146,7 +146,11 @@ function getTimeRemainingForGameToStart(matchDate) {
     const hours = Math.floor(timeLeft / ONE_HOUR_IN_MS);
     const minutes = Math.floor(timeLeft / ONE_MINUTE_IN_MS);
     
-    const timeRemaining = { days, hours, minutes };
+    const timeRemaining = {
+        days: days >= 0 ? days : null,
+        hours: hours >= 0 ? hours : null,
+        minutes: minutes >= 0 ? minutes : null
+    };
     
     return timeRemaining;
 }
@@ -155,8 +159,9 @@ function getMatchMinutesPassed({ status, utcDate, score }) {
     if (/finished|scheduled/i.test(status)) return null;
 
     const currentTime = Date.now();
-    const matchDate = new Date(utcDate);
-    const minutesPassed = currentTime - matchDate.getTime();
+    const matchTime = (new Date(utcDate)).getTime();
+    const timePassed = currentTime - matchTime;
+    const minutesPassed = Math.round(timePassed / ONE_MINUTE_IN_MS);
 
     const matchMinutes = /regular/i.test(score.duration) ?
         getRegularMatchMinutes(minutesPassed) :
