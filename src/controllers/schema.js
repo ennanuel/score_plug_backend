@@ -428,6 +428,37 @@ const RootQuery = new GraphQLObjectType({
                 return { competitions, totalPages, currentPage: page + 1, limit };
             }
         },
+        activeCompetitions: {
+            type: new GraphQLObjectType({
+                name: "Competitions",
+                fields: () => ({
+                    competitions: { type: new GraphQLList(CompetitionType) },
+                    currentPage: { type: GraphQLFloat },
+                    limit: { type: GraphQLFloat },
+                    totalPages: { type: GraphQLFloat }
+                })
+            }),
+            args: { 
+                isLive: GraphQLBoolean
+            },
+            resolve(parent, args) {
+                const { isLive } = args;
+                const { startDate, endDate } = getFromToDates();
+                const competitions = Match
+                    .find({
+                        $and: [
+                            { utcDate: { $lte: endDate } },
+                            { utcDate: { $gte: startDate } }
+                        ]
+                    })
+                    .sort({ name: -1 })
+                    .lean()
+                    .then((matches) => {
+                        return matches.reduce((competititons, match) => [], []);
+                    })
+                return competitions
+            }
+        },
         competition: {
             type: CompetitionType,
             args: { id: { type: GraphQLString } },
