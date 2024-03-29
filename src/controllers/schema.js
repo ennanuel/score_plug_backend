@@ -430,7 +430,7 @@ const RootQuery = new GraphQLObjectType({
         },
         activeCompetitions: {
             type: new GraphQLObjectType({
-                name: "Competitions",
+                name: "ActiveCompetitions",
                 fields: () => ({
                     competitions: { type: new GraphQLList(CompetitionType) },
                     currentPage: { type: GraphQLFloat },
