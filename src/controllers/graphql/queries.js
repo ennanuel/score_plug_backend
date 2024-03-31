@@ -93,7 +93,13 @@ const competitionQueries = {
         type: new GraphQLObjectType({
             name: "ActiveCompetitions",
             fields: () => ({
-                competitions: { type: new GraphQLList(CompetitionType) },
+                competitionIds: { type: new GraphQLList(GraphQLID) },
+                competitions: {
+                    type: new GraphQLList(CompetitionType),
+                    resolve(parent, args) {
+                        return Competition.find({ _id: { $in: parent.competitionIds } });
+                    }
+                },
                 currentPage: { type: GraphQLFloat },
                 limit: { type: GraphQLFloat },
                 totalPages: { type: GraphQLFloat }
@@ -105,19 +111,19 @@ const competitionQueries = {
         resolve(parent, args) {
             const { isLive } = args;
             const { startDate, endDate } = getFromToDates();
-            const competitions = Match
+            const matchStatusRegex = createMatchFilterRegExp(isLive ? 'in_play' : '');
+            const activeCompetitions = Match
                 .find({
                     $and: [
                         { utcDate: { $lte: endDate } },
-                        { utcDate: { $gte: startDate } }
+                        { utcDate: { $gte: startDate } },
+                        { status: { $regex: matchStatusRegex } }
                     ]
                 })
                 .sort({ name: -1 })
                 .lean()
-                .then((matches) => {
-                    return matches.reduce((competititons, match) => [], []);
-                })
-            return competitions
+                .then((matches) => Competition.find({ _id: matches.map(match => match.competition) }) );
+            return activeCompetitions
         }
     },
     competition: {
