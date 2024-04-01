@@ -1,6 +1,6 @@
 const { GraphQLID, GraphQLString, GraphQLObjectType, GraphQLList, GraphQLFloat, GraphQLBoolean } = require("graphql");
 
-const { getTimeRemainingForGameToStart, getMatchMinutesPassed } = require('../../utils/match');
+const { getTimeRemainingForGameToStart, getMatchMinutesPassed, createMatchFilterRegExp } = require('../../utils/match');
 
 const { getFromToDates } = require("../../helpers/getDate");
 
@@ -165,8 +165,8 @@ const MatchType = new GraphQLObjectType({
 const AreaType = new GraphQLObjectType({
     name: "Area",
     fields: () => ({
-        name: GraphQLString,
-        flag: GraphQLString
+        name: { type: GraphQLString },
+        flag: { type: GraphQLString }
     })
 });
 
@@ -254,9 +254,7 @@ const CompetitionType = new GraphQLObjectType({
                 });
             }
         },
-        standings: {
-            type: new GraphQLList(StandingType)
-        }
+        standings: { type: new GraphQLList(StandingType) }
     })
 });
 
