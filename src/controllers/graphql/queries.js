@@ -90,21 +90,7 @@ const competitionQueries = {
         }
     },
     activeCompetitions: {
-        type: new GraphQLObjectType({
-            name: "ActiveCompetitions",
-            fields: () => ({
-                competitionIds: { type: new GraphQLList(GraphQLID) },
-                competitions: {
-                    type: new GraphQLList(CompetitionType),
-                    resolve(parent, args) {
-                        return Competition.find({ _id: { $in: parent.competitionIds } });
-                    }
-                },
-                currentPage: { type: GraphQLFloat },
-                limit: { type: GraphQLFloat },
-                totalPages: { type: GraphQLFloat }
-            })
-        }),
+        type: new GraphQLList(CompetitionType),
         args: {
             isLive: { type: GraphQLBoolean }
         },
