@@ -1,6 +1,6 @@
 const { ONE_HOUR_IN_MS } = require("../constants");
 
-const getKeysToUpdate = ({ home, away }) => home > away ? ['wins', 'losses'] : home < away ? ['wins', 'losses'] : ['draws', 'draws'];
+const getKeysToUpdate = ({ home, away }) => home > away ? ['wins', 'losses'] : home < away ? ['losses', 'wins'] : ['draws', 'draws'];
 
 function reduceToObjectWithIdAsKey(objectWithMatchIdsAsKeys, matchIds) {
     const result = { ...objectWithMatchIdsAsKeys };
@@ -24,29 +24,45 @@ const reduceToMatchCompetitionsIds = (competitionIds, match) => {
 const reduceToArrayOfMatchIds = (matchIds, { matches }) => [...matchIds, ...matches];
 
 function reduceToMatchDetails(matchDetails, match) {
-    let { matchesPlayed, wins, draws, losses } = matchDetails;
+    const result = {};
 
-    const lostMatch = match.score.fullTime[match.teams.main] < match.score.fullTime[match.teams.other];
-    const wonMatch = match.score.fullTime[match.teams.main] > match.score.fullTime[match.teams.other];
-    const drewMatch = match.score.fullTime[match.teams.main] == match.score.fullTime[match.teams.other];
+    for (const timePeriod of ["firstHalf", "fullTime"]) {
+        let { wins, draws, losses, goalsScored, goalsConceded } = matchDetails[timePeriod];
 
-    if (wonMatch) wins += 1;
-    else if (drewMatch) draws += 1;
-    else if (lostMatch) losses += 1;
+        const lostMatch = match.score[timePeriod][match.teams.main] < match.score[timePeriod][match.teams.other];
+        const wonMatch = match.score[timePeriod][match.teams.main] > match.score[timePeriod][match.teams.other];
+        const drewMatch = match.score[timePeriod][match.teams.main] == match.score[timePeriod][match.teams.other];
 
-    matchesPlayed += 1;
+        if (wonMatch) wins += 1;
+        else if (drewMatch) draws += 1;
+        else if (lostMatch) losses += 1;
+        
+        goalsConceded += match.score[timePeriod][match.teams.other];
+        goalsScored += match.score[timePeriod][match.teams.main];
 
-    return { matchesPlayed, wins, draws, losses };
+        result[timePeriod] = { wins, draws, losses, goalsConceded, goalsScored };
+    }
+
+    result.matchesPlayed = matchDetails.matchesPlayed + 1;
+    return result;
 };
 
 function reduceToH2HDetails(H2HDetails, match) {
-    let { numberOfMatches, totalGoals, homeTeam, awayTeam } = H2HDetails;
-    const [homeTeamKey, awayTeamKey] = getKeysToUpdate(match.score.fullTime);
-    numberOfMatches += 1;
-    totalGoals += (match.score.fullTime.home + match.score.fullTime.away);
-    homeTeam = { ...homeTeam, [homeTeamKey]: homeTeam[homeTeamKey] + 1 };
-    awayTeam = { ...awayTeam, [awayTeamKey]: awayTeam[awayTeamKey] + 1 };
-    return { numberOfMatches, totalGoals, homeTeam, awayTeam };
+    let { numberOfMatches, ...timePeriods } = H2HDetails;
+    const result = {};
+
+    for (let [key, value] of Object.entries(timePeriods)) {
+        let { homeTeam, awayTeam } = value;
+
+        const [homeMatchOutcome, awayMatchOutcome] = getKeysToUpdate(match.score[key]);
+        homeTeam = { ...homeTeam, [homeMatchOutcome]: homeTeam[homeMatchOutcome] + 1, totalGoals: homeTeam.totalGoals + match.score[key].home };
+        awayTeam = { ...awayTeam, [awayMatchOutcome]: awayTeam[awayMatchOutcome] + 1, totalGoals: awayTeam.totalGoals + match.score[key].away };
+        
+        result[key] = { homeTeam, awayTeam };
+    }
+
+    result.numberOfMatches = numberOfMatches + 1;
+    return result;
 };
 
 function reduceMatchToUpdateSchedule(arrayOfUpdateSchedule, match) {
