@@ -216,17 +216,18 @@ function getTimeRemainingForGameToStart(matchDate) {
 }
 
 function getMatchMinutesPassed({ status, utcDate, score }) {
-    if (/finished|scheduled/i.test(status)) return null;
+    if (status === "TIMED") return;
+    if (status === 'PAUSED') return "HT";
+    else if (status === "FINISHED") return "FT";
 
     const currentTime = Date.now();
     const matchTime = (new Date(utcDate)).getTime();
     const timePassed = currentTime - matchTime;
     const minutesPassed = Math.round(timePassed / ONE_MINUTE_IN_MS);
 
-    const matchMinutes = /regular/i.test(score.duration) ?
-        getRegularMatchMinutes(minutesPassed) :
-        getExtraMatchTimeMinutes(minutesPassed);
+    const getMatchMinutes = /regular/i.test(score.duration) ? getRegularMatchMinutes : getExtraMatchTimeMinutes;
 
+    const matchMinutes = getMatchMinutes(minutesPassed)
     return matchMinutes;
 };
 
