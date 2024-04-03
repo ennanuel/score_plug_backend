@@ -10,6 +10,19 @@ const refineMatchValues = ({ id, competition, homeTeam, awayTeam, score, ...matc
     score: changeMatchScoreFormat(score)
 });
 
+const refineH2HValues = ({ id, aggregates, matches, resultSet }) => ({
+    _id: id,
+    matches,
+    resultSet,
+    aggregates: {
+        numberOfMatches: aggregates.numberOfMatches,
+        homeTeam: aggregates.homeTeam.id,
+        awayTeam: aggregates.awayTeam.id,
+        halfTime: null,
+        fullTime: null
+    }
+})
+
 const prepareForBulkWrite = (doc) => ({
     ...doc,
     updateOne: {
@@ -19,11 +32,16 @@ const prepareForBulkWrite = (doc) => ({
     }
 });
 
-const prepareMatchForUpload = (match) => Match.findOneAndUpdate({ _id: match._id }, { $set: match }, { new: true, upsert: true });
+const prepareMatchForUpload = (match) => Match.findOneAndUpdate(
+    { _id: match._id },
+    { $set: match },
+    { new: true, upsert: true }
+);
 
 
 module.exports = {
     prepareForBulkWrite,
     refineMatchValues,
+    refineH2HValues,
     prepareMatchForUpload
 };
