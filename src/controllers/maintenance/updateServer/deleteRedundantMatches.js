@@ -3,7 +3,7 @@ const H2H = require('../../../models/H2H');
 const Team = require('../../../models/Team');
 const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails, reduceToArrayOfMatchIds } = require('../../../helpers/reduce');
 const { getDateFrom } = require("../../../helpers/getDate");
-const { expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome } = require('../../../utils/match');
+const { expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchOutcome, getMatchPrediction } = require('../../../utils/match');
 const { prepareForBulkWrite } = require('../../../helpers/mongoose');
         
 const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? { main: 'home', other: 'away' } : { main: 'away', other: 'home' };
@@ -92,25 +92,29 @@ async function deleteIrrelevantH2HMatches() {
 };
 
 async function updateTeamPreviousMatches() {
-    const teams = await Team.find();
+    const teams = await Team.find().lean();
     const matchesToUpdate = [];
-    for (let team of teams) {
+
+    for (const team of teams) {
         const matches = await Match.find({
-            $or: [{ homeTeam: team._doc._id }, { awayTeam: team._doc._id }],
+            $or: [{ homeTeam: team._id }, { awayTeam: team._id }],
             status: 'FINISHED'
         }).lean();
 
-        const teamMatches = matches.map(match => ({ ...match, teams: assignMainAndOtherTeam(match.homeTeam, team._doc._id) }));
-        const { matchesPlayed, wins, draws, losses } = teamMatches.reduce(reduceToMatchDetails, { matchesPlayed: 0, wins: 0, draws: 0, losses: 0 });
+        const teamMatches = matches.map(match => ({ ...match, teams: assignMainAndOtherTeam(match.homeTeam, team._id) }));
+        const initialValues = {
+            matchesPlayed: 0,
+            firstHalf: { wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
+            fullTime: { wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 }
+        };
 
-        team.matchesPlayed = matchesPlayed;
-        team.wins = wins;
-        team.draws = draws;
-        team.losses = losses;
+        const { matchesPlayed, firstHalf, fullTime } = teamMatches.reduce(reduceToMatchDetails, initialValues);
+        const updatedTeam = { ...team, matchesPlayed, halfTime: firstHalf, fullTime };
 
         const matchIds = matches.map(match => match._id);
         matchesToUpdate.push(...matchIds);
-        await team.save();
+
+        await Team.findByIdAndUpdate(team._id, { $set: updatedTeam });
     };
 
     return Match.updateMany({ _id: { $in: matchesToUpdate } }, { $set: { isPrevMatch: true } });
@@ -124,27 +128,37 @@ async function updateHeadToHeadMatches() {
         if (headToHead.aggregates) {
             const matches = await Match.find({
                 $or: [
-                    { homeTeam: headToHead.aggregates.homeTeam.id, awayTeam: headToHead.aggregates.awayTeam.id },
-                    { awayTeam: headToHead.aggregates.homeTeam.id, homeTeam: headToHead.aggregates.awayTeam.id }
+                    { homeTeam: headToHead.aggregates.homeTeam, awayTeam: headToHead.aggregates.awayTeam },
+                    { awayTeam: headToHead.aggregates.homeTeam, homeTeam: headToHead.aggregates.awayTeam }
                 ],
                 status: 'FINISHED'
             }).lean();
 
-            const initialValues = { numberOfMatches: 0, totalGoals: 0, homeTeam: 0, awayTeam: 0 };
-            const { numberOfMatches, totalGoals, homeTeam, awayTeam } = matches.reduce(reduceToH2HDetails, initialValues);
+            const initialValues = {
+                numberOfMatches: 0,
+                firstHalf: {
+                    homeTeam: { id: headToHead.aggregates.homeTeam, wins: 0, draws: 0, losses: 0, totalGoals: 0 },
+                    awayTeam: { id: headToHead.aggregates.awayTeam, wins: 0, draws: 0, losses: 0, totalGoals: 0 }
+                },
+                fullTime: {
+                    homeTeam: { id: headToHead.aggregates.homeTeam, wins: 0, draws: 0, losses: 0, totalGoals: 0 },
+                    awayTeam: { id: headToHead.aggregates.awayTeam, wins: 0, draws: 0, losses: 0, totalGoals: 0 }
+                }
+            };
+            const { numberOfMatches, firstHalf, fullTime } = matches.reduce(reduceToH2HDetails, initialValues);
 
-            headToHead.numberOfMatches = numberOfMatches;
-            headToHead.totalGoals = totalGoals;
-            headToHead.homeTeam = homeTeam;
-            headToHead.awayTeam = awayTeam;
+            headToHead.aggregates.numberOfMatches = numberOfMatches;
+            headToHead.aggregates.halfTime = firstHalf;
+            headToHead.aggregates.fullTime = fullTime;
 
             const matchIds = matches.map(match => match._id);
             matchesToUpdate.push(...matchIds);
 
-            await H2H.findByIdAndUpdate(headToHead._id, { $set: { matches: matchIds } });
+            headToHead.matches = matchIds;
+            await H2H.findByIdAndUpdate(headToHead._id, { $set: headToHead });
         } else {
             await H2H.findByIdAndDelete(headToHead._id);
-            await Match.updateMany({ head2head: headToHead._id }, { head2head: null });
+            await Match.updateMany({ head2head: headToHead._id }, { $set: { head2head: null } });
         }
     }
 
@@ -172,11 +186,10 @@ const updateMatchesOutcomes = () => new Promise(
                 head2head: { $ne: null },
                 homeTeam: { $ne: null },
                 awayTeam: { $ne: null },
-                outcome: {
-                    homeWin: { $not: { $gte: 0 } },
-                    awayWin: { $not: { $gte: 0 } },
-                    draw: { $not: { $gte: 0 } }
-                }
+                $or: [
+                    { predictions: null },
+                    { predictions: undefined }
+                ]
             }).lean();
 
             const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
@@ -185,7 +198,7 @@ const updateMatchesOutcomes = () => new Promise(
             const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
             const matchesWithH2HandPrevMatches = await Promise.all(matchesToGetH2HandPrevMatches);
 
-            const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchOutcome);
+            const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchPrediction);
             const preparedMatches = matchesWithOutcome.map(prepareForBulkWrite);
             await Match.bulkWrite(preparedMatches);
             resolve();
