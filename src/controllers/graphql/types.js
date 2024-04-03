@@ -31,12 +31,46 @@ const ScoreType = new GraphQLObjectType({
     })
 });
 
-const OutcomeType = new GraphQLObjectType({
-    name: "Outcome",
+const GoalsPredictionType = new GraphQLObjectType({
+    name: "GoalsPrediction",
     fields: () => ({
-        homeWin: { type: GraphQLFloat },
-        draw: { type: GraphQLFloat },
-        awayWin: { type: GraphQLFloat }
+        over: { type: GraphQLFloat },
+        under: { type: GraphQLFloat }
+    })
+});
+
+const HalfPredictionType = new GraphQLObjectType({
+    name: "HalfPrediction",
+    fields: () => ({
+        outcome: {
+            type: new GraphQLObjectType({
+                name: "Outcome",
+                fields: () => ({
+                    homeWin: { type: GraphQLFloat },
+                    draw: { type: GraphQLFloat },
+                    awayWin: { type: GraphQLFloat }
+                })
+            })
+        },
+        goals: ({
+            type: new GraphQLObjectType({
+                name: "GoalsOutcome",
+                fields: () => ({
+                    _1: { type: GoalsPredictionType },
+                    _2: { type: GoalsPredictionType },
+                    _3: { type: GoalsPredictionType },
+                    _4: { type: GoalsPredictionType }
+                })
+            })
+        })
+    })
+});
+
+const PredictionType = new GraphQLObjectType({
+    name: "Prediction",
+    fields: () => ({
+        halfTime: { type: HalfPredictionType },
+        fullTime: { type: HalfPredictionType }
     })
 });
 
@@ -92,9 +126,9 @@ const HeadToHeadType = new GraphQLObjectType({
             resolve(parent, args) {
                 const { status, from, to } = args;
                 const { startDate, endDate } = getFromToDates(from, to);
-                return Match.find({
-                    _id: { $in: parent.matches },
-                });
+                return Match
+                    .find({ _id: { $in: parent.matches } })
+                    .lean()
             }
         }
     
@@ -151,7 +185,7 @@ const MatchType = new GraphQLObjectType({
             }
         },
         score: { type: ScoreType },
-        outcome: { type: OutcomeType },
+        predictions: { type: PredictionType },
         referees: { type: new GraphQLList(RefereeType) },
         standings: {
             type: new GraphQLList(CompetitionType),
