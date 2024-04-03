@@ -7,6 +7,24 @@ const RefereeSchema = Schema({
     nationality: String
 });
 
+const MatchOutcomeSchema = Schema({
+    homeWin: Number,
+    draw: Number,
+    awayWin: Number
+});
+
+const GoalsSchema = Schema({
+    over: Number,
+    under: Number
+});
+
+const GoalsOutcomeSchema = Schema({
+    _1: GoalsSchema,
+    _2: GoalsSchema,
+    _3: GoalsSchema,
+    _4: GoalsSchema
+})
+
 const matchSchema = Schema(
     {
         _id: Number,
@@ -50,10 +68,15 @@ const matchSchema = Schema(
                 away: Number
             }
         },
-        outcome: {
-            homeWin: Number,
-            draw: Number,
-            awayWin: Number
+        predictions: {
+            halfTime: {
+                outcome: MatchOutcomeSchema,
+                goals: GoalsOutcomeSchema
+            },
+            fullTime: {
+                outcome: MatchOutcomeSchema,
+                goals: GoalsOutcomeSchema
+            }
         },
         referees: [RefereeSchema]
     },
