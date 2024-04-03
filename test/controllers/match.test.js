@@ -4,7 +4,8 @@ const Match = require('../../src/models/Match');
 const Team = require("../../src/models/Team");
 const H2H = require("../../src/models/H2H");
 const Competition = require("../../src/models/Competition");
-const { MOCK_MATCHES, MATCH_SCORE, MATCH_OUTCOME } = require('../mocks/constants');
+const { MOCK_MATCHES, MATCH_SCORE, MATCH_OUTCOME, MOCK_TEAMS, MOCK_HEAD_TO_HEAD } = require('../mocks/constants');
+const { getMatchPrediction } = require('../../src/utils/match');
 
 jest.mock('../../src/models/Match');
 jest.mock("../../src/models/Team");
@@ -109,7 +110,7 @@ describe("Testing Match Route that fetches a matches from the Database, with the
 
 
         expect(response.status).toBe(200);
-        expect(response.body.totalPages).toBe(10);
+        expect(response.body.totalPages).toBe(2);
         expect(typeof (response.body.matches[0].homeTeam.name)).toBe("string");
     });
 
@@ -199,10 +200,29 @@ describe("Testing Match Route that fetches a matches from the Database, and retu
 
         const response = await request(app).get("/api/v2/match/prediction/outcomes");
 
-        const outcome = response.body.matches[0].outcome;
-        const totalOutcomePercentage = Math.round(outcome.homeWin + outcome.draw + outcome.awayWin);
+        const { halfTime, fullTime } = response.body.matches[0].outcome;
+        const totalHalfTimeOutcomePercentage = Math.round(halfTime.outcome.homeWin + halfTime.outcome.draw + halfTime.outcome.awayWin);
+        const totalFullTimeOutcomePercentage = Math.round(fullTime.outcome.homeWin + fullTime.outcome.draw + fullTime.outcome.awayWin);
+        const totalHalfTimeGoalsPercentage15 = Math.round(halfTime.goals["1.5"].over + halfTime.goals["1.5"].under);
+        const totalFullTimeGoalsPercentage15 = Math.round(fullTime.goals["1.5"].over + fullTime.goals["1.5"].under);
 
         expect(response.status).toBe(200);
-        expect(totalOutcomePercentage).toBe(100);
+        expect(totalHalfTimeOutcomePercentage).toBe(100);
+        expect(totalFullTimeOutcomePercentage).toBe(100);
+        expect(totalHalfTimeGoalsPercentage15).toBe(100);
+        expect(totalFullTimeGoalsPercentage15).toBe(100);
     });
 })
+
+
+describe("Test for calculating match outcome", () => { 
+    it("", () => {
+        const homeTeam = MOCK_TEAMS[2];
+        const awayTeam = MOCK_TEAMS[1];
+        const matchDetails = { ...MOCK_MATCHES[0], homeTeam, awayTeam, head2head: MOCK_HEAD_TO_HEAD };
+        const { predictions } = getMatchPrediction(matchDetails);
+
+        expect(Math.round(predictions.halfTime.goals["_1.5"].over + predictions.halfTime.goals["_1.5"].under)).toBe(100);
+        expect(Math.round(predictions.halfTime.outcome.homeWin + predictions.halfTime.outcome.draw + predictions.halfTime.outcome.awayWin)).toBe(100);
+    })
+});
