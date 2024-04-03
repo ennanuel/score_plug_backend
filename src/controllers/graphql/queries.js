@@ -55,6 +55,23 @@ const matchQueries = {
             return { matches, currentPage: page + 1, totalPages, limit };
         }
     },
+    similarMatches: {
+        type: new GraphQLList(MatchType),
+        args: { 
+            matchId: { type: GraphQLID }
+        }, 
+        resolve(parent, args) {
+            const { matchId } = parent;
+            const similarMatches = Match
+                .find({
+                    _id: { $ne: matchId },
+                })
+                // TODO: Fix the sort logic
+                .sort({ competition: -1, homeTeam: -1, awayTeam: -1 })
+                .limit(6)
+            return similarMatches
+        }
+    },
     match: {
         type: MatchType,
         args: { id: { type: GraphQLID } },
