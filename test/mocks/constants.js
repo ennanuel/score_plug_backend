@@ -16,9 +16,48 @@ const MATCH_SCORE = {
 }
 
 const MATCH_OUTCOME = {
-    homeWin: 33.33,
-    draw: 33.33,
-    awayWin: 33.33
+    halfTime: {
+        outcome: {
+            homeWin: 33.33,
+            draw: 33.33,
+            awayWin: 33.33
+        },
+        goals: {
+            "1.5": {
+                over: 50.00,
+                under: 50.00
+            },
+            "2.5": {
+                over: 50.00,
+                under: 50.00
+            },
+            "3.5": {
+                over: 50.00,
+                under: 50.00
+            },
+        }
+    },
+    fullTime: {
+        outcome: {
+            homeWin: 33.33,
+            draw: 33.33,
+            awayWin: 33.33
+        },
+        goals: {
+            "1.5": {
+                over: 50.00,
+                under: 50.00
+            },
+            "2.5": {
+                over: 50.00,
+                under: 50.00
+            },
+            "3.5": {
+                over: 50.00,
+                under: 50.00
+            },
+        }
+    }
 }
 
 const MOCK_MATCHES = [
@@ -71,13 +110,21 @@ const MOCK_PLAYERS = [
 
 const playerIds = MOCK_PLAYERS.map(player => player._id);
 
+const teamMatchOutcomes1 = { 
+    wins: 1, draws: 1, losses: 1, goalsScored: 1, goalsConceded: 3
+}
+
+const teamMatchOutcomes2 = { 
+    wins: 2, draws: 0, losses: 1, goalsScored: 5, goalsConceded: 2
+}
+
 const MOCK_TEAMS = [
-    { _id: 235, name: "FC Tobacco", squad: playerIds },
-    { _id: 236, name: "FC Laziness", squad: playerIds },
-    { _id: 235, name: "FC Tobacco", squad: playerIds },
-    { _id: 236, name: "FC Laziness", squad: playerIds },
-    { _id: 235, name: "FC Tobacco", squad: playerIds },
-    { _id: 236, name: "FC Laziness", squad: playerIds }
+    { _id: 235, name: "FC Tobacco", squad: playerIds, matchesPlayed: 3, halfTime: teamMatchOutcomes2, fullTime: teamMatchOutcomes1 },
+    { _id: 236, name: "FC Laziness", squad: playerIds, matchesPlayed: 3, halfTime: teamMatchOutcomes1, fullTime: teamMatchOutcomes1 },
+    { _id: 235, name: "FC Tobacco", squad: playerIds, matchesPlayed: 3, halfTime: teamMatchOutcomes2, fullTime: teamMatchOutcomes1 },
+    { _id: 236, name: "FC Laziness", squad: playerIds, matchesPlayed: 3, halfTime: teamMatchOutcomes1, fullTime: teamMatchOutcomes1 },
+    { _id: 235, name: "FC Tobacco", squad: playerIds, matchesPlayed: 3, halfTime: teamMatchOutcomes2, fullTime: teamMatchOutcomes1 },
+    { _id: 236, name: "FC Laziness", squad: playerIds, matchesPlayed: 3, halfTime: teamMatchOutcomes1, fullTime: teamMatchOutcomes1 }
 ];
 
 const COMPETITION_MATCHES = [
@@ -100,6 +147,46 @@ const MOCK_COMPETITIONS = [
     { _id: 506, name: "Players Cup", type: "CUP", area: { name: "Ojuelegba" }, teams: MOCK_TEAMS, standings: STANDINGS, matches: MATCH_IDS },
 ];
 
+const MOCK_HEAD_TO_HEAD = {
+    _id: "123456",
+    aggregates: {
+        numberOfMatches: 5,
+        halfTime: {
+            homeTeam: {
+                id: 235,
+                wins: 1,
+                draws: 2,
+                losses: 2,
+                totalGoals: 10
+            },
+            awayTeam: {
+                id: 236,
+                wins: 2,
+                draws: 2,
+                losses: 1,
+                totalGoals: 10
+            }
+        },
+        fullTime: {
+            homeTeam: {
+                id: 235,
+                wins: 1,
+                draws: 2,
+                losses: 2,
+                totalGoals: 10
+            },
+            awayTeam: {
+                id: 236,
+                wins: 2,
+                draws: 2,
+                losses: 1,
+                totalGoals: 10
+            }
+        }
+    },
+    matches: MOCK_MATCHES
+}
+
 module.exports = {
     MATCH_SCORE,
     MATCH_OUTCOME,
@@ -107,5 +194,6 @@ module.exports = {
     MOCK_COMPETITIONS,
     MOCK_TEAMS,
     MOCK_PLAYERS,
-    COMPETITION_MATCHES
+    COMPETITION_MATCHES,
+    MOCK_HEAD_TO_HEAD
 }
