@@ -36,7 +36,7 @@ function createMatchFilterRegExp(filter) {
 };
 
 async function getMatchWithTeamData(match) {
-    const teams = await Team.find({ _id: { $in: [match.homeTeam, match.awayTeam] } }, 'area name shortName tla crest').lean();
+    const teams = await Team.find({ _id: { $in: [match.homeTeam, match.awayTeam] } }).lean();
     const [homeTeam, awayTeam] = teams.sort((team) => team._id == match.homeTeam ? -1 : 1);
     const newMatchData = { ...match, homeTeam, awayTeam };
     return newMatchData;
@@ -91,32 +91,92 @@ async function getMatchHead2HeadAndPreviousMatches(match) {
     return result;
 };
 
-function calculateOutcomePercentage({ team1, team2, total }, [key1, key2]) {
-    const firstFactor = ((team1.h2h[key1] + team2.h2h[key2]) * 2);
-    const secondFactor = team1.prevMatches[key1] + team2.prevMatches[key2];
+function calculateOutcomePercentage({ homeTeam, awayTeam, total }, [key1, key2]) {
+    const firstFactor = ((homeTeam.h2h[key1] + awayTeam.h2h[key2]) * 2);
+    const secondFactor = homeTeam.prevMatches[key1] + awayTeam.prevMatches[key2];
     const totalFactors = firstFactor + secondFactor;
     const outcomePercentage = ((totalFactors * 100) / total).toFixed(2);
-    return outcomePercentage;
+    return +outcomePercentage;
 };
 
-const getTotalMatchesPlayed = (match) => (match.head2head.aggregates.numberOfMatches * 4) + match.homeTeam.matchesPlayed + match.awayTeam.matchesPlayed;
+function calculateGoalOutcomePercentage({ homeTeam, awayTeam, total, goals }) {
+    const h2hGoals = homeTeam.h2h.totalGoals + awayTeam.h2h.totalGoals;
+    const prevMatchesGoals = homeTeam.prevMatches.goalsScored + homeTeam.prevMatches.goalsConceded + awayTeam.prevMatches.goalsScored + awayTeam.prevMatches.goalsConceded;
+    
+    const totalGoals = (h2hGoals + prevMatchesGoals);
+    const averageGoals = Number((totalGoals / total).toFixed(2));
+
+    const goalsPercentage = Number(((averageGoals * 100) / goals).toFixed(2));
+
+    const overGoalsPrediction = Math.min(goalsPercentage, 100);
+    const underGoalsPrediction = 100 - overGoalsPrediction;
+
+    return { over: overGoalsPrediction, under: underGoalsPrediction };
+};
+
+const getTotal = (match) => (match.head2head.aggregates.numberOfMatches * 4) + match.homeTeam.matchesPlayed + match.awayTeam.matchesPlayed;
 
 function getMatchOutcome(match) {
-    const totalMatchesPlayed = getTotalMatchesPlayed(match);
-    const homeTeam = { h2h: match.head2head.aggregates.homeTeam, prevMatches: match.homeTeam };
-    const awayTeam = { h2h: match.head2head.aggregates.awayTeam, prevMatches: match.awayTeam };
-    const homeWinOutcome = calculateOutcomePercentage({ team1: homeTeam, team2: awayTeam, total: totalMatchesPlayed }, ['wins', 'losses']);
-    const drawOutcome = calculateOutcomePercentage({ team1: homeTeam, team2: awayTeam, total: totalMatchesPlayed }, ['draws', 'draws']);
-    const awayWinOutcome = calculateOutcomePercentage({ team1: awayTeam, team2: homeTeam, total: totalMatchesPlayed }, ['wins', 'losses']);
-    const outcome = { homeWin: +homeWinOutcome, draw: +drawOutcome, awayWin: +awayWinOutcome };
-    const matchWithOutcome = { ...match, outcome };
-    return matchWithOutcome;
+    const result = {};
+    const total = getTotal(match);
+    
+    for (let timePeriod of ["halfTime", "fullTime"]) {
+        const homeTeam = { h2h: match.head2head.aggregates[timePeriod].homeTeam, prevMatches: match.homeTeam[timePeriod] };
+        const awayTeam = { h2h: match.head2head.aggregates[timePeriod].awayTeam, prevMatches: match.awayTeam[timePeriod] };
+    
+        const homeWinOutcome = calculateOutcomePercentage({ homeTeam, awayTeam, total }, ['wins', 'losses']);
+        const drawOutcome = calculateOutcomePercentage({ homeTeam, awayTeam, total }, ['draws', 'draws']);
+        const awayWinOutcome = calculateOutcomePercentage({ awayTeam, homeTeam, total }, ['losses', 'wins']);
+
+        const outcome = { homeWin: homeWinOutcome, draw: drawOutcome, awayWin: awayWinOutcome };
+
+        result[timePeriod] = outcome
+    }
+
+    return result;
 };
 
+function getMatchGoalsPrediction(match) {
+    const total = getTotal(match);
+    const goalsOutcome = ["_1", "_2", "_3", "_4"];
+    const result = {};
+
+    for (let timePeriod of ["halfTime", "fullTime"]) {
+        const goalOutcome = {};
+
+        for (let key of goalsOutcome) { 
+            const homeTeam = { h2h: match.head2head.aggregates[timePeriod].homeTeam, prevMatches: match.homeTeam[timePeriod] };
+            const awayTeam = { h2h: match.head2head.aggregates[timePeriod].awayTeam, prevMatches: match.awayTeam[timePeriod] };
+            
+            const goals = Number(key.replace(/\D+/, ""));
+            const outcome = calculateGoalOutcomePercentage({ homeTeam, awayTeam, total, goals });
+            goalOutcome[key] = outcome;
+        }
+        
+        result[timePeriod] = goalOutcome;
+    };
+
+    return result;
+}
+
+
+function getMatchPrediction(match) {
+    const predictions = { halfTime: {}, fullTime: {} };
+    const matchOutcome = getMatchOutcome(match);
+    const goalPredictions = getMatchGoalsPrediction(match);
+
+    for (let timePeriod of Object.keys(predictions)) {
+        predictions[timePeriod].outcome = matchOutcome[timePeriod];
+        predictions[timePeriod].goals = goalPredictions[timePeriod];
+    }
+
+    return { _id: match._id, predictions };
+}
 
 
 function changeMatchScoreFormat({ halfTime, fullTime, winner, duration }) {
-    // the fulltime property for home or away is 'null' if the match has not started yet, hence the 'firstHalf' property logic
+    // The fulltime property for home or away is null if the match has not started yet, hence the 'firstHalf' property logic.
+
     const newMatchScoreFormat = {
         winner,
         duration,
@@ -187,6 +247,7 @@ module.exports = {
     expandMatchTeamsAndCompetition,
     getMatchHead2HeadAndPreviousMatches,
     getMatchOutcome,
+    getMatchPrediction,
     changeMatchScoreFormat,
     getTimeRemainingForGameToStart,
     getMatchMinutesPassed,
