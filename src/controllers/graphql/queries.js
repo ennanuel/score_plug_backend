@@ -55,6 +55,57 @@ const matchQueries = {
             return { matches, currentPage: page + 1, totalPages, limit };
         }
     },
+    matchPredictions: {
+        type: new GraphQLObjectType({
+            name: "MatchPredictions",
+            fields: () => ({
+                matches: { type: new GraphQLList(MatchType) },
+                limit: { type: GraphQLFloat },
+                currentPage: { type: GraphQLFloat },
+                totalPages: { type: GraphQLFloat }
+            })
+        }),
+        args: {
+            limit: { type: GraphQLFloat },
+            page: { type: GraphQLFloat },
+            from: { type: GraphQLString },
+            to: { type: GraphQLString },
+            status: { type: GraphQLString }
+        },
+        resolve(parent, args) {
+            const { limit = 10, page = 0, from, to, status } = args;
+            const { startDate, endDate } = getFromToDates(from);
+            const statusRegExp = createMatchFilterRegExp(status);
+            const matches = Match
+                .find({
+                    $and: [
+                        { isMain: true },
+                        { status: { $regex: statusRegExp } },
+                        { utcDate: { $gte: startDate } },
+                        { utcDate: { $lte: endDate } },
+                        { 'predictions.halfTime.outcome.homeWin': { $gt: 0 } }
+                    ]
+                })
+                .limit(limit)
+                .skip(limit * page);
+
+            const totalPages = Match
+                .find({
+                    isMain: true,
+                    status: { $regex: statusRegExp },
+                    $and: [
+                        { isMain: true },
+                        { utcDate: { $gte: startDate } },
+                        { utcDate: { $lte: endDate } },
+                        { 'predictions.halfTime.outcome.homeWin': { $gt: 0 } }
+                    ]
+                })
+                .count()
+                .then(count => Math.ceil(count / limit));
+            
+            return { matches, currentPage: page + 1, totalPages, limit };
+        }
+    },
     similarMatches: {
         type: new GraphQLList(MatchType),
         args: { 
