@@ -288,7 +288,33 @@ const CompetitionType = new GraphQLObjectType({
                 });
             }
         },
-        standings: { type: new GraphQLList(StandingType) }
+        standings: { type: new GraphQLList(StandingType) },
+        recentMatches: {
+            type: new GraphQLObjectType({
+                name: "CompetitionRecentMatches",
+                fields: () => ({
+                    matches: { type: GraphQLFloat },
+                    hasLiveMatch: { type: GraphQLBoolean }
+                })
+            }),
+            resolve(parent, args) {
+                const { startDate, endDate } = getFromToDates();
+                return Match
+                    .find({
+                    competition: parent._id,
+                    isMain: true,
+                    $and: [
+                        { utcDate: { $gte: startDate } },
+                        { utcDate: { $lte: endDate } }
+                    ]
+                    })
+                    .lean()
+                    .then(matches => ({
+                        matches: matches.length,
+                        hasLiveMatch: Boolean(matches.filter(match => /(in_play|paused)/i.test(match.status)).length)
+                    }));
+            }
+        }
     })
 });
 
