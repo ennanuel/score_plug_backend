@@ -15,6 +15,14 @@ const { getRegularMatchMinutes, getExtraMatchTimeMinutes } = require('../helpers
 
 const getCompetition = (competitionId) => Competition.findById(competitionId, 'area name emblem').lean();
 
+
+const DEFAULT_TEAM_AGGREGATE = {
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    totalGoals: 0
+};
+
 function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
     const matchesToUpdate = [];
     for (let currentMatch of currentMatches) {
@@ -95,7 +103,8 @@ function calculateOutcomePercentage({ homeTeam, awayTeam, total }, [key1, key2])
     const firstFactor = ((homeTeam.h2h[key1] + awayTeam.h2h[key2]) * 2);
     const secondFactor = homeTeam.prevMatches[key1] + awayTeam.prevMatches[key2];
     const totalFactors = firstFactor + secondFactor;
-    const outcomePercentage = ((totalFactors * 100) / total).toFixed(2);
+    const outcomePercentage = ((totalFactors * 100) / (total + 0.00001)).toFixed(2);
+    if (/nan/i.test(+outcomePercentage)) console.log(outcomePercentage, firstFactor, secondFactor, totalFactors, total);
     return +outcomePercentage;
 };
 
@@ -103,13 +112,15 @@ function calculateGoalOutcomePercentage({ homeTeam, awayTeam, total, goals }) {
     const h2hGoals = homeTeam.h2h.totalGoals + awayTeam.h2h.totalGoals;
     const prevMatchesGoals = homeTeam.prevMatches.goalsScored + homeTeam.prevMatches.goalsConceded + awayTeam.prevMatches.goalsScored + awayTeam.prevMatches.goalsConceded;
     
-    const totalGoals = (h2hGoals + prevMatchesGoals);
-    const averageGoals = Number((totalGoals / total).toFixed(2));
+    const totalGoals = (h2hGoals + prevMatchesGoals) + 0.000001
+    const averageGoals = Number((totalGoals / total).toFixed(2)) + 0.000001;
 
     const goalsPercentage = Number(((averageGoals * 100) / goals).toFixed(2));
 
     const overGoalsPrediction = Math.min(goalsPercentage, 100);
     const underGoalsPrediction = 100 - overGoalsPrediction;
+
+    if ([overGoalsPrediction, goalsPercentage, totalGoals, averageGoals, total].includes("NaN")) console.log(overGoalsPrediction, goalsPercentage, totalGoals, averageGoals, total)
 
     return { over: overGoalsPrediction, under: underGoalsPrediction };
 };
@@ -119,10 +130,10 @@ const getTotal = (match) => (match.head2head.aggregates.numberOfMatches * 4) + m
 function getMatchOutcome(match) {
     const result = {};
     const total = getTotal(match);
-    
+   
     for (let timePeriod of ["halfTime", "fullTime"]) {
-        const homeTeam = { h2h: match.head2head.aggregates[timePeriod].homeTeam, prevMatches: match.homeTeam[timePeriod] };
-        const awayTeam = { h2h: match.head2head.aggregates[timePeriod].awayTeam, prevMatches: match.awayTeam[timePeriod] };
+        const homeTeam = { h2h: match.head2head.aggregates[timePeriod]?.homeTeam || DEFAULT_TEAM_AGGREGATE, prevMatches: match.homeTeam[timePeriod] };
+        const awayTeam = { h2h: match.head2head.aggregates[timePeriod]?.awayTeam || DEFAULT_TEAM_AGGREGATE, prevMatches: match.awayTeam[timePeriod] };
     
         const homeWinOutcome = calculateOutcomePercentage({ homeTeam, awayTeam, total }, ['wins', 'losses']);
         const drawOutcome = calculateOutcomePercentage({ homeTeam, awayTeam, total }, ['draws', 'draws']);
@@ -145,8 +156,8 @@ function getMatchGoalsPrediction(match) {
         const goalOutcome = {};
 
         for (let key of goalsOutcome) { 
-            const homeTeam = { h2h: match.head2head.aggregates[timePeriod].homeTeam, prevMatches: match.homeTeam[timePeriod] };
-            const awayTeam = { h2h: match.head2head.aggregates[timePeriod].awayTeam, prevMatches: match.awayTeam[timePeriod] };
+            const homeTeam = { h2h: match.head2head.aggregates[timePeriod]?.homeTeam || DEFAULT_TEAM_AGGREGATE, prevMatches: match.homeTeam[timePeriod] };
+            const awayTeam = { h2h: match.head2head.aggregates[timePeriod]?.awayTeam || DEFAULT_TEAM_AGGREGATE, prevMatches: match.awayTeam[timePeriod] };
             
             const goals = Number(key.replace(/\D+/, ""));
             const outcome = calculateGoalOutcomePercentage({ homeTeam, awayTeam, total, goals });
