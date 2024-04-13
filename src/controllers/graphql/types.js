@@ -218,9 +218,10 @@ const TableType = new GraphQLObjectType({
     name: "StandingTable",
     fields: () => ({
         position: { type: GraphQLFloat },
+        teams: { type: GraphQLList(TeamType) },
         team: {
             type: TeamType,
-            resolve(parent, args) {
+            resolve(parent) {
                 return Team.findById(parent.team);
             }
         },
