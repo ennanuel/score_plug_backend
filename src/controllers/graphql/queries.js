@@ -182,10 +182,8 @@ const competitionQueries = {
     },
     competition: {
         type: CompetitionType,
-        args: {
-            id: { type: GraphQLID }
-        },
-        reslove(parent, args) {
+        args: { id: { type: GraphQLID } },
+        resolve(parent, args) { 
             return Competition.findById(args.id);
         }
     }
