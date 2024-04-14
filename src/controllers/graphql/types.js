@@ -1,4 +1,4 @@
-const { GraphQLID, GraphQLString, GraphQLObjectType, GraphQLList, GraphQLFloat, GraphQLBoolean } = require("graphql");
+const { GraphQLID, GraphQLString, GraphQLObjectType, GraphQLList, GraphQLFloat, GraphQLBoolean, graphql } = require("graphql");
 
 const { getTimeRemainingForGameToStart, getMatchMinutesPassed, createMatchFilterRegExp } = require('../../utils/match');
 
@@ -91,6 +91,25 @@ const MatchScoreType = new GraphQLObjectType({
     })
 });
 
+const HeadToHeadTeam = new GraphQLObjectType({
+    name: "H2HTeam",
+    fields: () => ({
+        id: { type: GraphQLFloat },
+        wins: { type: GraphQLFloat },
+        draws: { type: GraphQLFloat },
+        losses: { type: GraphQLFloat },
+        totalGoals: { type: GraphQLFloat }
+    })
+});
+
+const HeadToHeadAggregatesType = new GraphQLObjectType({
+    name: "H2HAggregate",
+    fields: () => ({
+        homeTeam: { type: HeadToHeadTeam },
+        awayTeam: { type: HeadToHeadTeam }
+    })
+});
+
 const HeadToHeadType = new GraphQLObjectType({
     name: "H2H",
     fields: () => ({
@@ -101,18 +120,8 @@ const HeadToHeadType = new GraphQLObjectType({
                 fields: () => ({
                     numberOfMatches: { type: GraphQLFloat },
                     totalGoals: { type: GraphQLFloat },
-                    homeTeam: {
-                        type: TeamType,
-                        resolve(parent, args) {
-                            return Team.findById(parent.aggregates.homeTeam.id)
-                        }
-                    },
-                    awayTeam: {
-                        type: TeamType,
-                        resolve(parent, args) {
-                            return Team.findById(parent.aggregates.awayTeam.id);
-                        }
-                    }
+                    halfTime: { type: HeadToHeadAggregatesType },
+                    fullTime: { type: HeadToHeadAggregatesType }
                 })
             })
         },
