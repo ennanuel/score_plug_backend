@@ -109,17 +109,17 @@ const matchQueries = {
     similarMatches: {
         type: new GraphQLList(MatchType),
         args: { 
-            matchId: { type: GraphQLID }
+            id: { type: GraphQLID }
         }, 
         resolve(parent, args) {
-            const { matchId } = parent;
+            const { id } = args;
             const similarMatches = Match
                 .find({
-                    _id: { $ne: matchId },
+                    _id: { $ne: id },
                 })
                 // TODO: Fix the sort logic
-                .sort({ competition: -1, homeTeam: -1, awayTeam: -1 })
-                .limit(6)
+                .sort({ competition: -1 })
+                .limit(6);
             return similarMatches
         }
     },
