@@ -368,8 +368,8 @@ const TeamType = new GraphQLObjectType({
         clubColors: { type: GraphQLString },
         venue: { type: GraphQLString },
         coach: { type: PlayerType },
-        halfTime: TeamMatchOutcomeType,
-        fullTime: TeamMatchOutcomeType,
+        halfTime: { type: TeamMatchOutcomeType },
+        fullTime: { type: TeamMatchOutcomeType },
         squad: {
             type: new GraphQLList(PlayerType),
             resolve(parent, args) {
