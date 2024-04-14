@@ -333,6 +333,17 @@ const PlayerType = new GraphQLObjectType({
     })
 });
 
+const TeamMatchOutcomeType = new GraphQLObjectType({
+    name: "TeamOutcome",
+    fields: () => ({
+        wins: { type: GraphQLFloat },
+        draws: { type: GraphQLFloat },
+        losses: { type: GraphQLFloat },
+        goalsScored: { type: GraphQLFloat },
+        goalsConceded: { type: GraphQLFloat }
+    })
+})
+
 const TeamType = new GraphQLObjectType({
     name: "Team",
     fields: () => ({
@@ -347,11 +358,9 @@ const TeamType = new GraphQLObjectType({
         founded: { type: GraphQLString },
         clubColors: { type: GraphQLString },
         venue: { type: GraphQLString },
-        matchesPlayed: { type: GraphQLFloat },
-        wins: { type: GraphQLFloat },
-        draws: { type: GraphQLFloat },
-        losses: { type: GraphQLFloat },
         coach: { type: PlayerType },
+        halfTime: TeamMatchOutcomeType,
+        fullTime: TeamMatchOutcomeType,
         squad: {
             type: new GraphQLList(PlayerType),
             resolve(parent, args) {
