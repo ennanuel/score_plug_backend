@@ -223,7 +223,7 @@ const teamQueries = {
     team: {
         type: TeamType,
         args: {
-            id: { type: GraphQLString }
+            id: { type: GraphQLID }
         },
         resolve(parent, args) {
             return Team.findById(args.id);
