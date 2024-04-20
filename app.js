@@ -27,6 +27,7 @@ app.use(
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
+app.use('/images', express.static("src/images"));
 app.use('/maintenance', maintenanceRoute);
 app.use('/api/v2/auth', authRoute);
 app.use('/api/v2/team', teamRoute);
