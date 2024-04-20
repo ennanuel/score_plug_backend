@@ -157,6 +157,14 @@ const competitionQueries = {
             return { competitions, totalPages, currentPage: page + 1, limit };
         }
     },
+    topCompetitions: {
+        type: new GraphQLList(CompetitionType),
+        resolve(parent, args) {
+            return Competition
+                .find()
+                .sort({ ranking: -1 });
+        }
+    },
     activeCompetitions: {
         type: new GraphQLList(CompetitionType),
         args: {
