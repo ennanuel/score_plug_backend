@@ -370,6 +370,21 @@ const TeamType = new GraphQLObjectType({
         coach: { type: PlayerType },
         halfTime: { type: TeamMatchOutcomeType },
         fullTime: { type: TeamMatchOutcomeType },
+        hasOngoingMatch: { 
+            type: GraphQLBoolean,
+            resolve(parent, args) {
+                return Match
+                    .findOne({
+                        $or: [
+                            { homeTeam: parent._id },
+                            { awayTeam: parent._id }
+                        ],
+                        status: { $regex: /in_play|paused/i }
+                    })
+                    .lean()
+                    .then(match => Boolean(match));
+            }
+        },
         squad: {
             type: new GraphQLList(PlayerType),
             resolve(parent, args) {
