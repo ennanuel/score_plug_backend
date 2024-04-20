@@ -6,56 +6,69 @@ const HEADERS = {
 
 const COMPETITION_RANKINGS = [
     {
-        name: 'FIFA World Cup',
-        code: 'WC'
-    },
-    {
-        name: 'Euros',
-        code: 'EC'
-    },
-    {
         name: 'UEFA Champions League',
-        code: 'CL'
+        code: 'CL',
+        emblem: `${process.env.LIVE_URL}/images/competitions/ucl-logo.png`
     },
     {
         name: 'England Premier League',
-        code: 'PL'
-    },
-    {
-        name: 'Bundesliga',
-        code: 'BL1'
+        code: 'PL',
+        emblem: `${process.env.LIVE_URL}/images/competitions/premier-league-logo.png`
     },
     {
         name: 'La Liga',
-        code: 'PD'
+        code: 'PD',
+        emblem: `${process.env.LIVE_URL}/images/competitions/laliga-logo.png`
+    },
+    {
+        name: 'Bundesliga',
+        code: 'BL1',
+        emblem: `${process.env.LIVE_URL}/images/competitions/bundesliga-logo.png`
     },
     {
         name: 'Serie A',
-        code: 'SA'
+        code: 'SA',
+        emblem: `${process.env.LIVE_URL}/images/competitions/serie-a-logo.png`
     },
     {
         name: 'Eredivisie',
-        code: 'DED'
+        code: 'DED',
+        emblem: `${process.env.LIVE_URL}/images/competitions/eredivisie-logo.png`
     },
     {
-        name: 'Ligue 1',
-        code: 'FL1'
+        name: 'FIFA World Cup',
+        code: 'WC',
+        emblem: `${process.env.LIVE_URL}/images/competitions/fifa-world-cup-logo.png`
+    },
+    {
+        name: 'Euros',
+        code: 'EC',
+        emblem: `${process.env.LIVE_URL}/images/competitions/euros-logo.png`
     },
     {
         name: 'England Championship',
-        code: 'ELC'
+        code: 'ELC',
+        emblem: `${process.env.LIVE_URL}/images/competitions/championship-logo.png`
+    },
+    {
+        name: 'Ligue 1',
+        code: 'FL1',
+        emblem: `${process.env.LIVE_URL}/images/competitions/ligue-1-logo.png`
     },
     {
         name: 'Copa Libertadores',
-        code: 'CLI'
+        code: 'CLI',
+        emblem: `${process.env.LIVE_URL}/images/competitions/copa-libertadores-logo.png`
     },
     {
-        name: 'Primeira Liga',
-        code: 'PPL'
+        name: 'Liga Portugal',
+        code: 'PPL',
+        emblem: `${process.env.LIVE_URL}/images/competitions/liga-portugal-logo.png`
     },
     {
         name: 'Brazil Serie A',
-        code: 'BSA'
+        code: 'BSA',
+        emblem: `${process.env.LIVE_URL}/images/competitions/brasil-serie-a-logo.png`
     },
 ];
 
