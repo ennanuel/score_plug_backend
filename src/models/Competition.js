@@ -53,7 +53,8 @@ const CompetitionSchema = Schema(
                 required: true
             }
         ],
-        standings: [StandingsSchema]
+        standings: [StandingsSchema],
+        ranking: Number
     },
     { timestamps: true }
 )
