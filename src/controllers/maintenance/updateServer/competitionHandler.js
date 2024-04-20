@@ -19,9 +19,15 @@ const competitionHandler = () => new Promise(
     }
 );
 
-const prepareCompetitionForUpload = ({ id, name, code, currentSeason, ...competition }) => {
-    const newCompetitionNameAndCode = COMPETITION_RANKINGS.find(comp => comp.code === code);
-    const result = { ...competition, ...newCompetitionNameAndCode };
+const prepareCompetitionForUpload = ({ id, name, code, emblem, currentSeason, ...competition }) => {
+    const competitionRanking = COMPETITION_RANKINGS.findIndex(comp => comp.code === code);
+    const competitionRankingDetails = COMPETITION_RANKINGS[competitionRanking];
+    const result = { 
+        ...competition, 
+        name: competitionRankingDetails?.name || name, 
+        emblem: competitionRankingDtails?.emblem || emblem,
+        ranking: competitionRanking
+    };
     result._id = id;
     result.currentSeason = { ...currentSeason, winner: currentSeason.winner?.id };
     return result;
