@@ -162,7 +162,7 @@ const competitionQueries = {
         resolve(parent, args) {
             return Competition
                 .find()
-                .sort({ ranking: -1 });
+                .sort({ ranking: 1 });
         }
     },
     activeCompetitions: {
