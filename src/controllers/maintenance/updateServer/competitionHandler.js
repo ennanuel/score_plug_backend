@@ -65,13 +65,17 @@ const prepareCompetitionForUpdate = (competitions) => new Promise(
     async function (resolve, reject) {
         try {
             for (let competition of competitions) {
-                const { name, emblem, currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
+                const { name, currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
+                
                 if (lastUpdated == competition._doc.lastUpdated) resolve(null);
+
                 const standings = await getCompetitionStandings(competition._doc._id);
                 const competitionWinnerId = currentSeason.winner?.id;
-                const updateData = { standings, name, emblem, currentSeason: { ...currentSeason, winner: competitionWinnerId } };
+                const updateData = { standings, name, currentSeason: { ...currentSeason, winner: competitionWinnerId } };
                 const shouldUpdateTeams = competition._doc.startDate !== currentSeason.startDate || competition._doc.teams.length <= 0;
+
                 if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._doc._id);
+
                 console.log('%s competition updated', competition._doc.name);
                 await Competition.findByIdAndUpdate(competition._doc._id, { $set: updateData });
                 await delay(20000);
