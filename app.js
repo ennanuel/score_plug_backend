@@ -11,8 +11,9 @@ const playerRoute = require('./src/routes/player');
 const matchRoute = require('./src/routes/match');
 const searchRoute = require('./src/routes/search');
 const maintenanceRoute = require('./src/routes/maintenance');
+const liveUpdateRoute = require('./src/routes/liveUpdate');
 
-const schema = require('./src/controllers/schema');
+const schema = require('./sr./src/routes/liveUpdate');
 
 dotenv.config();
 
@@ -35,6 +36,9 @@ app.use('/api/v2/competition', compRoute);
 app.use('/api/v2/player', playerRoute);
 app.use('/api/v2/match', matchRoute);
 app.use('/api/v2/search', searchRoute);
+
+
+app.use('/live-update', liveUpdateRoute);
 
 app.use('/graphql', graphqlHTTP({
     schema,
