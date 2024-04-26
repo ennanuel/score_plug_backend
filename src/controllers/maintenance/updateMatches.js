@@ -1,3 +1,4 @@
+const { default: axios } = require("axios");
 const { fetchHandler } = require("../../helpers/fetchHandler");
 const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 
@@ -30,6 +31,8 @@ async function executeMatchUpdate() {
 
         const updatedMatches = await Promise.all(matchesToSave);
         console.log("%s Matches Updated!", updatedMatches.length);
+
+        axios.get('/live-update');
         
         status = 'SUCCESS';
     } catch (error) {
@@ -45,6 +48,7 @@ function updateMatches(req, res) {
         executeMatchUpdate();
 
         const nextUpdateCallTime = getTimeForNextUpdateCall();
+
         return res.status(200).json({ message: `Match update started`, nextCall: nextUpdateCallTime });
     } catch (error) {
         console.error(error);
