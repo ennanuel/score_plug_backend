@@ -13,7 +13,7 @@ const searchRoute = require('./src/routes/search');
 const maintenanceRoute = require('./src/routes/maintenance');
 const liveUpdateRoute = require('./src/routes/liveUpdate');
 
-const schema = require('./sr./src/routes/liveUpdate');
+const schema = require('./src/routes/liveUpdate');
 
 dotenv.config();
 

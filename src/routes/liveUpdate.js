@@ -6,7 +6,7 @@ const Match = require('../models/Match');
 
 router.get('/', async function (req, res) { 
     const { startDate, endDate } = getFromToDates();
-    const matches = Match
+    const matches = await Match
         .find({
             status: { $regex: /(^timed)/i },
             $and: [
