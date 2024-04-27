@@ -39,7 +39,7 @@ async function executeMatchUpdate() {
         const matchesToUpdate = await Promise.all(matchesToSave);
         updatedMatchIds = matchesToUpdate.map(match => match._id);
 
-        console.log("%s Matches Updated!", updatedMatches.length);
+        console.log("%s Matches Updated!", updatedMatchIds.length);
 
         status = 'SUCCESS';
     } catch (error) {
