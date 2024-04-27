@@ -4,18 +4,20 @@ const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 
 const Match = require("../../models/Match");
 
-const { changeMatchScoreFormat } = require("../../utils/match");
+const { changeMatchScoreFormat, getMatchMinutesPassed, getTimeRemainingForGameToStart } = require("../../utils/match");
 const { getTimeForNextUpdateCall, updateMatchSchedule, checkIfServerIsUpdating } = require("../../utils/scheduler");
 const { getFromToDates } = require("../../helpers/getDate");
 
 const { io } = require("../../../app");
 
 async function executeMatchUpdate() {
+    let status;
+    let updatedMatchIds = [];
+
     try {
         const serverIsUpdating = checkIfServerIsUpdating();
         if (serverIsUpdating) throw new Error("Daily Server Update is running");
 
-        var status;
         const { matches } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/matches`);
         const matchIds = matches.map(match => match.id);
         const matchesObjectWithIdAsKey = matches.reduce(reduceToObjectWithIdAsKeys, {});
@@ -24,19 +26,21 @@ async function executeMatchUpdate() {
 
         for (const match of matchesInDB) {
             const matchWithUpdatedValue = matchesObjectWithIdAsKey[match._id];
+            const matchScore = changeMatchScoreFormat(matchWithUpdatedValue.score);
 
-            if (matchWithUpdatedValue.lastUpdated === match._doc.lastUpdated) continue;
+            if (matchWithUpdatedValue.status === match._doc.status && (match._doc.score.fullTime.home === matchScore.fullTime.home && match._doc.score.fullTime.away === matchScore.fullTime.away)) continue;
+
             match.status = matchWithUpdatedValue.status;
-            match.score = changeMatchScoreFormat(matchWithUpdatedValue.score);
+            match.score = matchScore;
             match.lastUpdated = matchWithUpdatedValue.lastUpdated;
             matchesToSave.push(match.save());
         };
 
-        updatedMatches = await Promise.all(matchesToSave);
+        const matchesToUpdate = await Promise.all(matchesToSave);
+        updatedMatchIds = matchesToUpdate.map(match => match._id);
+
         console.log("%s Matches Updated!", updatedMatches.length);
 
-        axios.get('/live-update');
-        
         status = 'SUCCESS';
     } catch (error) {
         console.error(error.message);
@@ -45,16 +49,31 @@ async function executeMatchUpdate() {
         updateMatchSchedule(status);
 
         const { startDate, endDate } = getFromToDates();
-        const matches = await Match
-            .find({ 
-                $and: [
-                    { utcDate: { $lte: endDate } },
-                    { utcDate: { $gt: startDate } }
-                ]
-             })
+        const fetchedMatches = await Match
+            .find(
+                { 
+                    $and: [
+                        { utcDate: { $lte: endDate } },
+                        { utcDate: { $gt: startDate } }
+                    ]
+                },
+                '_id homeTeam awayTeam score status utcDate competition'
+            )
             .lean();
         
-        io.emit('match-update', matches);
+        const matches = fetchedMatches.reduce((matchesObject, match) => ({
+            ...matchesObject,
+            [match._id]: {
+                ...match,
+                wasUpdated: updatedMatchIds.includes(match._id),
+                minute: getMatchMinutesPassed(match),
+                timeRemaining: getTimeRemainingForGameToStart(match)
+            }
+        }), {});
+        const competitions = fetchedMatches.filter(match => updatedMatchIds.includes(match._id)).map(match => match.competitition);
+        const teams = fetchedMatches.filter(match => updatedMatchIds.includes(match._id)).reduce((teamIds, match) => [...teamIds, match.homeTeam, match.awayTeam], []);
+        
+        io.emit('match-update', { matches, teams, competitions });
     }
 }
 
