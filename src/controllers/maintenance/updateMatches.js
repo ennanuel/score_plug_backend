@@ -70,8 +70,8 @@ async function executeMatchUpdate() {
                 timeRemaining: getTimeRemainingForGameToStart(match)
             }
         }), {});
-        const competitions = fetchedMatches.filter(match => updatedMatchIds.includes(match._id)).map(match => match.competitition);
-        const teams = fetchedMatches.filter(match => updatedMatchIds.includes(match._id)).reduce((teamIds, match) => [...teamIds, match.homeTeam, match.awayTeam], []);
+        const competitions = fetchedMatches.filter(match => updatedMatchIds.includes(match._id) && /in_play|paused/i.test(match.status)).map(match => match.competition);
+        const teams = fetchedMatches.filter(match => updatedMatchIds.includes(match._id) && /in_play|paused/.test(match.status)).reduce((teamIds, match) => [...teamIds, match.homeTeam, match.awayTeam], []);
         
         io.emit('match-update', { matches, teams, competitions });
     }
