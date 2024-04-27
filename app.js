@@ -4,6 +4,10 @@ const cors = require('cors');
 const bp = require('body-parser');
 const { graphqlHTTP } = require('express-graphql');
 
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
 const authRoute = require('./src/routes/auth');
 const teamRoute = require('./src/routes/team');
 const compRoute = require('./src/routes/competition');
@@ -11,7 +15,6 @@ const playerRoute = require('./src/routes/player');
 const matchRoute = require('./src/routes/match');
 const searchRoute = require('./src/routes/search');
 const maintenanceRoute = require('./src/routes/maintenance');
-
 const schema = require('./src/routes/schema');
 
 dotenv.config();
@@ -39,6 +42,14 @@ app.use('/api/v2/search', searchRoute);
 app.use('/graphql', graphqlHTTP({
     schema,
     graphiql: process.env.NODE_ENV == 'development'
-}))
+}));
 
-module.exports = app;
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: process.env.FRONTEND_URL
+    }
+})
+
+module.exports = { io, server, app };

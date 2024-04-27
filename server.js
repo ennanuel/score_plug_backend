@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
-// The express is declared in a different file to fix jest exit error when testing.
+const { app, io, server } = require('./app');
 
-const app = require("./app");
+// The express is declared in a different file to fix jest exit error when testing.
 
 mongoose.set('strictQuery', false);
 
@@ -11,7 +11,12 @@ mongoose
         useNewUrlParser: true,
         useUnifiedTopology: true
     })
-    .then(() => app.listen(process.env.PORT, () => {
-        console.log("Server is running...")
+    .then(() => server.listen(process.env.PORT, () => {
+        console.log('server running on port %s', process.env.PORT);
+
+        io.on("connection", (socket) => {
+            console.log('Socket connected: %s', socket.id);
+            socket.on('group-action', (params, type) => memberActions({ ...params, type, socket, io }))
+        });
     }))
     .catch((err) => console.log(err));

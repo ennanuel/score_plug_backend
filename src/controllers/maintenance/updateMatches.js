@@ -6,6 +6,9 @@ const Match = require("../../models/Match");
 
 const { changeMatchScoreFormat } = require("../../utils/match");
 const { getTimeForNextUpdateCall, updateMatchSchedule, checkIfServerIsUpdating } = require("../../utils/scheduler");
+const { getFromToDates } = require("../../helpers/getDate");
+
+const { io } = require("../../../app");
 
 async function executeMatchUpdate() {
     try {
@@ -29,7 +32,7 @@ async function executeMatchUpdate() {
             matchesToSave.push(match.save());
         };
 
-        const updatedMatches = await Promise.all(matchesToSave);
+        updatedMatches = await Promise.all(matchesToSave);
         console.log("%s Matches Updated!", updatedMatches.length);
 
         axios.get('/live-update');
@@ -40,6 +43,18 @@ async function executeMatchUpdate() {
         status = 'FAILED';
     } finally {
         updateMatchSchedule(status);
+
+        const { dateFrom, dateTo } = getFromToDates();
+        const matches = await Match
+            .find({ 
+                $and: [
+                    { utcDate: { lte: dateTo } },
+                    { utcDate: { gt: dateFrom } }
+                ]
+             })
+            .lean();
+        
+        io.emit('match-update', matches);
     }
 }
 
