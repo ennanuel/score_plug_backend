@@ -6,6 +6,6 @@ const liveUpdate = require('../controllers/liveUpdate');
 
 router.put('/update/server', verifyAuthToken, updateServer);
 
-router.put("/update/match", verifyAuthToken, updateMatches, liveUpdate);
+router.get("/update/match", verifyAuthToken, updateMatches, liveUpdate);
 
 module.exports = router;
