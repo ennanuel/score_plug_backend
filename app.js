@@ -4,7 +4,6 @@ const cors = require('cors');
 const bp = require('body-parser');
 const { graphqlHTTP } = require('express-graphql');
 
-const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
