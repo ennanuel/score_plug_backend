@@ -1,20 +1,20 @@
 {
   "matches": {
-    "lastUpdated": "Sat, 24 Feb 2024 18:39:38 GMT",
+    "lastUpdated": "Fri, 12 Apr 2024 07:16:11 GMT",
     "status": null,
     "updateSchedule": [
       {
-        "start": "Sat, 24 Feb 2024 12:30:00 GMT",
-        "end": "Sat, 24 Feb 2024 22:48:00 GMT"
+        "start": "Fri, 12 Apr 2024 18:00:00 GMT",
+        "end": "Fri, 12 Apr 2024 21:33:00 GMT"
       },
       {
-        "start": "Sat, 24 Feb 2024 00:00:00 GMT",
-        "end": "Sat, 24 Feb 2024 02:18:00 GMT"
+        "start": "Fri, 12 Apr 2024 00:00:00 GMT",
+        "end": "Fri, 12 Apr 2024 02:18:00 GMT"
       }
     ]
   },
   "server": {
-    "lastUpdated": "Sat, 24 Feb 2024 18:39:39 GMT",
-    "status": "SUCCESS"
+    "lastUpdated": "Fri, 12 Apr 2024 07:15:57 GMT",
+    "status": "PENDING"
   }
 }

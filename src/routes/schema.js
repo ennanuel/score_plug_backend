@@ -1,6 +1,6 @@
 const { GraphQLObjectType, GraphQLSchema } = require('graphql');
 
-const { competitionQueries, matchQueries, teamQueries } = require("./graphql/queries");
+const { competitionQueries, matchQueries, teamQueries } = require("../controllers/graphql/queries");
 
 
 const RootQuery = new GraphQLObjectType({

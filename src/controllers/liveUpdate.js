@@ -1,10 +1,8 @@
-const router = (require('express')).Router();
-
 const { getFromToDates } = require('../helpers/getDate');
 const Match = require('../models/Match');
 
 
-router.get('/', async function (req, res) { 
+async function liveUpdate (req, res) { 
     const { startDate, endDate } = getFromToDates();
     const matches = await Match
         .find({
@@ -23,6 +21,6 @@ router.get('/', async function (req, res) {
     });
 
     res.write(`data: ${JSON.stringify(matches)}`);
-});
+};
 
-module.exports = router;
+module.exports = liveUpdate
