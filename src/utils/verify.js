@@ -1,5 +1,3 @@
-const liveUpdate = require("../controllers/liveUpdate");
-
 function verifyAuthToken(req, res, next) {
     try {
         const headers = req.headers;
@@ -10,7 +8,7 @@ function verifyAuthToken(req, res, next) {
         next();
     } catch (error) {
         console.error(error);
-        liveUpdate(req, res);
+        return res.status(403).json({ message: error.message });
     }
 }
 

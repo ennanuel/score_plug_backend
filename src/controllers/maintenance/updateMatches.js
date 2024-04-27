@@ -43,14 +43,13 @@ async function executeMatchUpdate() {
     }
 }
 
-function updateMatches(req, res, next) {
+function updateMatches(req, res) {
     try {
         executeMatchUpdate();
 
         const nextUpdateCallTime = getTimeForNextUpdateCall();
-        req.nextCall = nextUpdateCallTime;
-        
-        next();
+
+        return res.status(200).json({ message: `Match update started`, nextCall: nextUpdateCallTime });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: error.message });
