@@ -38,7 +38,7 @@ const matchQueries = {
                     { utcDate: { $gte: startDate } },
                     { utcDate: { $lte: endDate } }
                 ]
-            }).limit(limit).skip(limit * page);
+            }).sort({ utcDate: -1 }).limit(limit).skip(limit * page);
 
             const totalPages = Match
                 .find({
