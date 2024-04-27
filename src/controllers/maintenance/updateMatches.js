@@ -44,12 +44,12 @@ async function executeMatchUpdate() {
     } finally {
         updateMatchSchedule(status);
 
-        const { dateFrom, dateTo } = getFromToDates();
+        const { startDate, endDate } = getFromToDates();
         const matches = await Match
             .find({ 
                 $and: [
-                    { utcDate: { lte: dateTo } },
-                    { utcDate: { gt: dateFrom } }
+                    { utcDate: { $lte: endDate } },
+                    { utcDate: { $gt: startDate } }
                 ]
              })
             .lean();
