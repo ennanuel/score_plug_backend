@@ -31,7 +31,7 @@ async function executeMatchUpdate() {
 
             if (matchWithUpdatedValue.status === match._doc.status && (match._doc.score.fullTime.home === matchScore.fullTime.home && match._doc.score.fullTime.away === matchScore.fullTime.away)) continue;
             
-            if ((match._doc.score.fullTime.home === matchScore.fullTime.home && match._doc.score.fullTime.away === matchScore.fullTime.away)) updatedMatchScores.push(match._doc._id);
+            if ((match._doc.score.fullTime.home !== matchScore.fullTime.home || match._doc.score.fullTime.away !== matchScore.fullTime.away)) updatedMatchScores.push(match._doc._id);
                 
             match.status = matchWithUpdatedValue.status;
             match.score = matchScore;
