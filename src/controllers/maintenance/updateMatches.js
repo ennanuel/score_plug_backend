@@ -64,12 +64,14 @@ async function executeMatchUpdate() {
         const matches = fetchedMatches.reduce((matchesObject, match) => ({
             ...matchesObject,
             [match._id]: {
-                ...match,
+                score: match.score,
+                status: match.status,
                 wasUpdated: updatedMatchIds.includes(match._id),
                 minute: getMatchMinutesPassed(match),
                 timeRemaining: getTimeRemainingForGameToStart(match)
             }
         }), {});
+        
         const competitions = fetchedMatches.filter(match => updatedMatchIds.includes(match._id) && /in_play|paused/i.test(match.status)).map(match => match.competition);
         const teams = fetchedMatches.filter(match => updatedMatchIds.includes(match._id) && /in_play|paused/.test(match.status)).reduce((teamIds, match) => [...teamIds, match.homeTeam, match.awayTeam], []);
         
