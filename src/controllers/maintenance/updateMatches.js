@@ -13,6 +13,7 @@ const { io } = require("../../../app");
 async function executeMatchUpdate() {
     let status;
     let updatedMatchIds = [];
+    let updatedMatchScores = [];
 
     try {
         const serverIsUpdating = checkIfServerIsUpdating();
@@ -29,7 +30,9 @@ async function executeMatchUpdate() {
             const matchScore = changeMatchScoreFormat(matchWithUpdatedValue.score);
 
             if (matchWithUpdatedValue.status === match._doc.status && (match._doc.score.fullTime.home === matchScore.fullTime.home && match._doc.score.fullTime.away === matchScore.fullTime.away)) continue;
-
+            
+            if ((match._doc.score.fullTime.home === matchScore.fullTime.home && match._doc.score.fullTime.away === matchScore.fullTime.away)) updatedMatchScores.push(match._doc._id);
+                
             match.status = matchWithUpdatedValue.status;
             match.score = matchScore;
             match.lastUpdated = matchWithUpdatedValue.lastUpdated;
@@ -67,6 +70,7 @@ async function executeMatchUpdate() {
                 score: match.score,
                 status: match.status,
                 wasUpdated: updatedMatchIds.includes(match._id),
+                scoreWasUpdated: updatedMatchScores.includes(match._id),
                 minute: getMatchMinutesPassed(match),
                 timeRemaining: getTimeRemainingForGameToStart(match)
             }
