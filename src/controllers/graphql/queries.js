@@ -109,17 +109,19 @@ const matchQueries = {
     similarMatches: {
         type: new GraphQLList(MatchType),
         args: { 
-            id: { type: GraphQLID }
+            id: { type: GraphQLID },
+            limit: { type: GraphQLFloat }
         }, 
         resolve(parent, args) {
-            const { id } = args;
+            const { id, limit = 6 } = args;
             const similarMatches = Match
                 .find({
                     _id: { $ne: id },
+                    isMain: true
                 })
                 // TODO: Fix the sort logic
-                .sort({ competition: -1 })
-                .limit(6);
+                .sort({ utcDate: -1 })
+                .limit(limit);
             return similarMatches
         }
     },
