@@ -338,7 +338,8 @@ const PlayerType = new GraphQLObjectType({
         position: { type: GraphQLString },
         dateOfBirth: { type: GraphQLString },
         nationality: { type: GraphQLString },
-        shirtNumber: { type: GraphQLString }
+        shirtNumber: { type: GraphQLString },
+        marketValue: { type: GraphQLFloat }
     })
 });
 
@@ -370,6 +371,7 @@ const TeamType = new GraphQLObjectType({
         coach: { type: PlayerType },
         halfTime: { type: TeamMatchOutcomeType },
         fullTime: { type: TeamMatchOutcomeType },
+        matchesPlayed: { type: GraphQLFloat },
         hasOngoingMatch: { 
             type: GraphQLBoolean,
             resolve(parent, args) {
