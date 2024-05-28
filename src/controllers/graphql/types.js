@@ -403,18 +403,23 @@ const TeamType = new GraphQLObjectType({
             resolve(parent, args) {
                 const { from, to, status } = args;
                 const { startDate, endDate } = getFromToDates(from, to);
+                const dateFilter = (from || to) && status ?
+                    {
+                        $and: [
+                            { utcDate: { $gte: startDate } },
+                            { utcDate: { $lte: endDate } }
+                        ]
+                    } :
+                    {};
                 const statusRegExp = createMatchFilterRegExp(status);
 
                 return Match.find({
+                    status: { $regex: statusRegExp },
                     $or: [
                         { homeTeam: parent._id },
                         { awayTeam: parent._id }
                     ],
-                    $and: [
-                        { status: { $regex: statusRegExp } },
-                        (from || to) && status ? { utcDate: { $gte: startDate } } : {},
-                        (to || to) && status ? { utcDate: { $lte: endDate } } : {}
-                    ]
+                    ...dateFilter
                 });
             }
         },
