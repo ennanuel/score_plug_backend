@@ -403,7 +403,7 @@ const TeamType = new GraphQLObjectType({
             resolve(parent, args) {
                 const { from, to, status } = args;
                 const { startDate, endDate } = getFromToDates(from, to);
-                const dateFilter = (from || to) && status ?
+                const dateFilter = (from || to) ?
                     {
                         $and: [
                             { utcDate: { $gte: startDate } },
