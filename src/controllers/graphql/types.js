@@ -412,8 +412,8 @@ const TeamType = new GraphQLObjectType({
                     ],
                     $and: [
                         { status: { $regex: statusRegExp } },
-                        { utcDate: { $gte: startDate } },
-                        { utcDate: { $lte: endDate } }
+                        (from || to) && status ? { utcDate: { $gte: startDate } } : {},
+                        (to || to) && status ? { utcDate: { $lte: endDate } } : {}
                     ]
                 });
             }
