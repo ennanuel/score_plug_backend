@@ -411,7 +411,6 @@ const TeamType = new GraphQLObjectType({
                         { awayTeam: parent._id }
                     ],
                     $and: [
-                        { isMain: true },
                         { status: { $regex: statusRegExp } },
                         { utcDate: { $gte: startDate } },
                         { utcDate: { $lte: endDate } }
