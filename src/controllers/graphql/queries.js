@@ -240,7 +240,10 @@ const teamQueries = {
         }
     },
     topTeams: {
-        type: new GraphQLList(TeamType),
+        type: new GraphQLObjectType({
+            limit: GraphQLFloat,
+            teams: new GraphQLList(TeamType)
+        }),
         args: {
             limit: { type: GraphQLFloat }
         },
