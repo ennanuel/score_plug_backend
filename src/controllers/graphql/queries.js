@@ -253,9 +253,10 @@ const teamQueries = {
         resolve: (parent, args) => {
             const limit = args.limit || 10;
             const topTeams = Competition
-                .find({}, 'standings')
+                .find({ type: { $not: { $eq: 'CUP' }}}, 'standings')
                 .lean()
                 .then((competitions) => {
+                    console.log(competitions);
                     const topTeamIds = [];
                     const maxCompetitionStandings = Math.max(competitions.map((competition) => competition.standings.length));
 
