@@ -251,11 +251,11 @@ const teamQueries = {
             limit: { type: GraphQLFloat }
         },
         resolve: (parent, args) => {
-            Competition
+            const limit = args.limit || 10;
+            const topTeams = Competition
                 .find({}, 'standings')
                 .lean()
                 .then((competitions) => {
-                    const limit = args.limit || 10;
                     const topTeamIds = [];
                     const maxCompetitionStandings = Math.max(competitions.map((competition) => competition.standings.length));
 
@@ -270,11 +270,10 @@ const teamQueries = {
                         };
                     }
                     
-                    return {
-                        limit,
-                        teams: Team.find({ _id: { $in: topTeamIds }})
-                    }
-                })
+                    return Team.find({ _id: { $in: topTeamIds }})
+                });
+
+            return { limit, teams: topTeams };
         }
     }
 };
