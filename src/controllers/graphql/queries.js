@@ -238,6 +238,38 @@ const teamQueries = {
         resolve(parent, args) {
             return Team.findById(args.id);
         }
+    },
+    topTeams: {
+        type: new GraphQLList(TeamType),
+        args: {
+            limit: { type: GraphQLFloat }
+        },
+        resolve: (parent, args) => {
+            Competition
+                .find({}, 'standings')
+                .lean()
+                .then((competitions) => {
+                    const limit = args.limit || 10;
+                    const topTeamIds = [];
+                    const maxCompetitionStandings = Math.max(competitions.map((competition) => competition.standings.length));
+
+                    for(let standingIndex = 0; standingIndex < maxCompetitionStandings && topTeamIds.length <= limit; standingIndex++) {
+                        for(let competitionIndex = 0; competitionIndex < competitions.length; competitionIndex++) {
+                            const competition = competitions[competitionIndex];
+                            const standing = competition.standings[standingIndex];
+                            const topTeamId = standing?.table && standing.table[0]?.team;
+
+                            if(!topTeamId) continue;
+                            topTeamIds.push(topTeamId);
+                        };
+                    }
+                    
+                    return {
+                        limit,
+                        teams: Team.find({ _id: { $in: topTeamIds }})
+                    }
+                })
+        }
     }
 };
 
