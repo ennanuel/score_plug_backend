@@ -12,7 +12,7 @@ const fetchHandler = (url) => new Promise(
     }
 );
 
-// There is a limit to how many times I can the API I use, so this is like a cool down;
+// There is a limit to how many times I can the API I use, so this is like a cool down - I'm using a Free Tier 😂;
 
 const delay = (delayInMs = 10000) => new Promise(resolve => setTimeout(resolve, delayInMs));
 
