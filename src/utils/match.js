@@ -10,7 +10,6 @@ const {
     VALID_MATCH_STATUS_REGEX
 } = require("../constants");
 
-const { getDateFrom } = require("../helpers/getDate");
 const { getRegularMatchMinutes, getExtraMatchTimeMinutes } = require('../helpers');
 
 const getCompetition = (competitionId) => Competition.findById(competitionId, 'area name emblem').lean();
@@ -249,12 +248,9 @@ function resolveMatchTimeFormat(match) {
     return matchWithTimeFormat;
 }
 
-const checkIfIsMainMatch = (matchDate) => (new Date(matchDate)).getTime() >= (new Date(getDateFrom())).getTime();
-
 module.exports = {
     updateMatchStatusAndScore,
     createMatchFilterRegExp,
-    checkIfIsMainMatch,
     getMatchWithTeamData,
     expandMatchTeamsAndCompetition,
     getMatchHead2HeadAndPreviousMatches,
