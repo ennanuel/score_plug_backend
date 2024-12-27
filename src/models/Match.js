@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const RefereeSchema = Schema({
+    _id: Number,
     name: String,
     type: String,
     nationality: String
