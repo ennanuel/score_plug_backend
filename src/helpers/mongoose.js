@@ -14,13 +14,13 @@ const refineH2HValues = ({ id, aggregates, matches, resultSet }) => ({
     _id: id,
     matches,
     resultSet,
-    aggregates: {
+    aggregates: aggregates ? {
         numberOfMatches: aggregates.numberOfMatches,
         homeTeam: aggregates.homeTeam.id,
         awayTeam: aggregates.awayTeam.id,
         halfTime: null,
         fullTime: null
-    }
+    } : null
 })
 
 const prepareForBulkWrite = (doc) => ({
@@ -34,7 +34,12 @@ const prepareForBulkWrite = (doc) => ({
 
 const prepareMatchForUpload = (match) => Match.findOneAndUpdate(
     { _id: match._id },
-    { $set: match },
+    { 
+        $set: {
+            ...match,
+            referees: match.referees.map(({ id, ...referee}) => ({ ...referee, _id: id }))
+        } 
+    },
     { new: true, upsert: true }
 );
 
