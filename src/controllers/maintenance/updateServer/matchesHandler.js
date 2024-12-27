@@ -7,8 +7,6 @@ const { prepareForBulkWrite, prepareMatchForUpload, refineH2HValues } = require(
 
 const { getDateFilters } = require("../../../helpers/getDate");
 const { refineMatchValues } = require("../../../helpers/mongoose");
-const { checkIfIsMainMatch } = require("../../../utils/match");
-
 
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {
@@ -82,25 +80,38 @@ const prepareMatchHeadToHead = (matches) => new Promise(
         try {
             const head2heads = [];
             for (let match of matches) {
-                if (match.head2head) continue;
-                
-                console.log('preparing to update: %s', match._doc._id);
-                const H2HDataURL = `${process.env.FOOTBALL_API_URL}/matches/${match._doc._id}/head2head?limit=10`;
-                const { resultSet, aggregates, matches } = await fetchHandler(H2HDataURL);
-                await delay();
+                let head2head = null;
+                let head2headId = null;
 
-                const savedH2HMatches = await saveH2HMatches(matches);
-                savedH2HMatches.unshift(match._doc._id);
+                const possibleH2HIds = [`${match.homeTeam} ${match.awayTeam}`, `${match.homeTeam} ${match.awayTeam}`];
+                const similarHead2Head = await H2H.findOne({ _id: { $in: possibleH2HIds } });
                 
-                const id = `${match._doc.homeTeam}${match._doc.awayTeam}`;
-                if (!aggregates) continue;
-                const h2hToSave = refineH2HValues({ id, resultSet, aggregates, matches: savedH2HMatches });
-                const head2head = prepareForBulkWrite(h2hToSave);
-                
-                match.isMain = checkIfIsMainMatch(match._doc.utcDate);
-                match.head2head = id;
+                if(similarHead2Head) {
+                    console.log("similar head-to-head exists");
+                    head2head = prepareForBulkWrite({ ...similarHead2Head, matches: [match._id, ...similarHead2Head.matches] });
+                    head2headId = similarHead2Head._id;
+                } else {
+                    console.log('preparing to update: %s', match._doc._id);
+                    const H2HDataURL = `${process.env.FOOTBALL_API_URL}/matches/${match._doc._id}/head2head?limit=10`;
+                    const { resultSet, aggregates, matches } = await fetchHandler(H2HDataURL);
+
+                    await delay();
+
+                    const savedH2HMatches = await saveH2HMatches(matches);
+                    const headToHeadMatchIds = [match._doc._id, ...savedH2HMatches];
+
+                    const id = `${match._doc.homeTeam} ${match._doc.awayTeam}`;
+                    const h2hToSave = refineH2HValues({ id, resultSet, aggregates, matches: headToHeadMatchIds });
+                    head2head = prepareForBulkWrite(h2hToSave);
+                    head2headId = id;
+                }
+                    
+                match.head2head = head2headId;
+                match.isHead2Head = true;
+
                 await match.save();
                 console.log('match updated: %s', match._doc._id);
+                    
                 head2heads.push(head2head);
             }
             resolve(head2heads);
