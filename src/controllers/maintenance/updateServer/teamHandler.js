@@ -4,7 +4,7 @@ const Player = require('../../../models/Player');
 const Competition = require('../../../models/Competition');
 const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
 const { prepareForBulkWrite, refineMatchValues } = require('../../../helpers/mongoose');
-const { checkIfCompetitionHasEnded } = require('../../../helpers/getDate');
+const { getTodayDate } = require('../../../helpers/getDate');
 
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
@@ -35,21 +35,12 @@ const handleTeamPreviousMatches = () => new Promise(
     }
 );
 
-const sortByDate = (itemA, itemB) => (new Date(itemA.utcDate)).getTime() - (new Date(itemB.utcDate)).getTime();
-
-async function checkIfPreviousMatchesAlreadyExist({ competitionId, currentSeason }) {
-    const matches = await Match.find({ competition: competitionId, status: "FINISEHED", isPrevMatch: true }).lean();
-    const competitionHasEnded = checkIfCompetitionHasEnded(currentSeason.endDate);
-    const isValid = matches.length <= 0 || !competitionHasEnded;
-    return isValid;
-}
-
 const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promise(
     async function (resolve, reject) {
         try {
             const result = [];
-            const shouldFetchCompetitionMatches = await checkIfPreviousMatchesAlreadyExist({ currentSeason, competitionId: _id });
-            if (shouldFetchCompetitionMatches) {
+            const matchesAlreadyExist = await checkIfPreviousMatchesAlreadyExist(_id);
+            if (!matchesAlreadyExist) {
                 console.log('fetching %s previous matches', name);
 
                 const { currentMatchday } = currentSeason;
@@ -57,12 +48,17 @@ const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promis
                     fetchMatchesForCupCompetition({ competitionId: _id, limit: 50 }) :
                     fetchMatchesForNormalCompetition({ competitionId: _id, currentMatchday, limit: 50 });
                 const matches = await getMatches;
-                const sortedResult = matches
-                    .map((match) => refineMatchValues({ ...match, isPrevMatch: true }))
-                    .sort(sortByDate);
-                result.push(...sortedResult);
+                const refinedValues = matches.map((match) => refineMatchValues({ ...match, isPrevMatch: true }))
+                result.push(...refinedValues);
 
                 console.log('Gotten %s previous matches', name);
+            } else {
+                // Changes any match before today that has finished as previous match;
+                await Match.updateMany({ 
+                    isMain: true, 
+                    status: "FINISHED", 
+                    utcDate: { $lt: getTodayDate().toLocaleDateString() } 
+                }, { $set: { isPrevMatch: true }});
             }
             resolve(result);
         } catch (error) {
@@ -70,6 +66,12 @@ const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promis
         }
     }
 );
+
+async function checkIfPreviousMatchesAlreadyExist(competitionId) {
+    const matches = await Match.find({ competition: competitionId, status: "FINISHED", isPrevMatch: true }).lean();
+    const result = matches.length > 0
+    return result;
+};
 
 const fetchMatchesForNormalCompetition = ({ competitionId, currentMatchday, limit }) => new Promise(
     async function (resolve, reject) {
@@ -108,18 +110,18 @@ const fetchMatchesForCupCompetition = ({ competitionId, limit }) => new Promise(
             reject(error);
         }
     }
-)
-
-async function deleteIrrelevantTeams() { 
-    const competitions = await Competition.find().lean();
-    const competitionTeams = competitions.reduce((a, b) => [...a, ...b.teams], []);
-    return Team.deleteMany({ _id: { $not: { $in: competitionTeams } } });
-};
+);
 
 async function deleteIrrelevantPlayers() { 
     const teams = await Team.find().lean();
     const teamPlayers = teams.reduce((a, b) => [...a, ...b.squad], []);
     return Player.deleteMany({ _id: { $not: { $in: teamPlayers } } });
+};
+
+async function deleteIrrelevantTeams() { 
+    const competitions = await Competition.find().lean();
+    const competitionTeams = competitions.reduce((a, b) => [...a, ...b.teams], []);
+    return Team.deleteMany({ _id: { $not: { $in: competitionTeams } } });
 };
 
 module.exports = teamHandler;
