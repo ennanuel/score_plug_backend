@@ -24,8 +24,6 @@ function getFromToDates(from, to) {
     return { startDate: fromDate.toLocaleDateString(), endDate: toDate.toLocaleDateString() };
 };
 
-const checkIfCompetitionHasEnded = (competitionEndDate) => (Date.now() + ONE_DAY_IN_MS) > (new Date(competitionEndDate)).getTime();
-
 const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
 
 const checkMatchScheduleDate = (scheduleDate) => (new Date(scheduleDate)).toLocaleDateString() === (new Date()).toLocaleDateString();
@@ -41,7 +39,6 @@ module.exports = {
     getDateTo,
     getDateFilters,
     convertToTimeNumber,
-    checkIfCompetitionHasEnded,
     checkMatchScheduleDate,
     checkServerScheduleDateAndStatus
 }
