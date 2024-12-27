@@ -19,20 +19,6 @@ const competitionHandler = () => new Promise(
     }
 );
 
-const prepareCompetitionForUpload = ({ id, name, code, emblem, currentSeason, ...competition }) => {
-    const competitionRanking = COMPETITION_RANKINGS.findIndex(comp => comp.code === code);
-    const competitionRankingDetails = COMPETITION_RANKINGS[competitionRanking];
-    const result = { 
-        ...competition, 
-        name: competitionRankingDetails?.name || name, 
-        emblem: competitionRankingDtails?.emblem || emblem,
-        ranking: competitionRanking
-    };
-    result._id = id;
-    result.currentSeason = { ...currentSeason, winner: currentSeason.winner?.id };
-    return result;
-}
-
 const getCompetitions = () => new Promise(
     async function (resolve, reject) {
         try {
@@ -61,17 +47,39 @@ const updateCompetitionDetails = (competitions) => new Promise(
     }
 );
 
+const prepareCompetitionForUpload = ({ currentSeason, ...competition }) => {
+    const competitionRanking = COMPETITION_RANKINGS.findIndex(comp => comp.code === competition.code);
+    const competitionRankingDetails = COMPETITION_RANKINGS[competitionRanking];
+    const result = { 
+        ...competition, 
+        name: competitionRankingDetails?.name || competition.name, 
+        emblem: competitionRankingDetails?.emblem || competition.emblem,
+        ranking: competitionRanking
+    };
+    result._id = competition.id;
+    result.currentSeason = { ...currentSeason, winner: currentSeason.winner?.id };
+    return result;
+}
+
+const filterCompWithUpToDateData = (competition) => {
+    const lastUpdatedCompetition = (new Date(competition._doc.updatedAt)).getTime();
+    const competitionDateIsOutdated = lastUpdatedCompetition < getYesterdayDate().getTime();
+    const noStandings = competition._doc.standings.length <= 0;
+    return competitionDateIsOutdated || noStandings;
+}
+
 const prepareCompetitionForUpdate = (competitions) => new Promise(
     async function (resolve, reject) {
         try {
             for (let competition of competitions) {
-                const { name, currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
+                // If we get to fetch all the competitions with their currentSeason and lastUpdated, we can save 10 seconds
+                const { currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
                 
                 if (lastUpdated == competition._doc.lastUpdated) resolve(null);
 
                 const standings = await getCompetitionStandings(competition._doc._id);
                 const competitionWinnerId = currentSeason.winner?.id;
-                const updateData = { standings, name, currentSeason: { ...currentSeason, winner: competitionWinnerId } };
+                const updateData = { standings, currentSeason: { ...currentSeason, winner: competitionWinnerId } };
                 const shouldUpdateTeams = competition._doc.startDate !== currentSeason.startDate || competition._doc.teams.length <= 0;
 
                 if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._doc._id);
@@ -92,6 +100,7 @@ const getCompetitionData = (competitionCode) => new Promise(
         try {
             console.log('getting competition data...');
             const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions/${competitionCode}`);
+
             console.log('data fetch successful!');
             resolve(result);
         } catch (error) {
@@ -100,13 +109,12 @@ const getCompetitionData = (competitionCode) => new Promise(
     }
 );
 
-const changeCompetitionStandingsTeamsToJustId = (standing) => ({ ...standing, table: standing.table.map(position => ({ ...position, team: position.team.id })) });
-
 const getCompetitionStandings = (competitionId) => new Promise(
     async function (resolve, reject) {
         try {
             console.log('getting competition standings...');
             const result = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions/${competitionId}/standings`);
+
             console.log('standings fetch successful!');
             const standingWithTeamId = result.standings.map(changeCompetitionStandingsTeamsToJustId);
             resolve(standingWithTeamId);
@@ -133,6 +141,18 @@ const updateCompetitionTeams = (competitionId) => new Promise(
     }
 );
 
+function changeCompetitionStandingsTeamsToJustId (standing) { 
+    return {
+        ...standing, 
+        table: standing
+            .table
+            .map(position => ({ 
+                ...position, 
+                team: position.team.id
+            })) 
+    }
+}
+
 async function saveTeamPlayers (team, i) {
     try {
         const players = team.squad.map(player => prepareForBulkWrite({ ...player, _id: player.id }));
@@ -143,12 +163,5 @@ async function saveTeamPlayers (team, i) {
         throw error;
     }
 };
-
-const filterCompWithUpToDateData = (competition) => {
-    const lastUpdatedCompetition = (new Date(competition._doc.updatedAt)).getTime();
-    const competitionDateIsOutdated = lastUpdatedCompetition < getYesterdayDate().getTime();
-    const noStandings = competition._doc.standings.length <= 0;
-    return competitionDateIsOutdated || noStandings;
-}
 
 module.exports = competitionHandler;
