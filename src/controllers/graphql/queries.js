@@ -243,8 +243,8 @@ const teamQueries = {
         type: new GraphQLObjectType({
             name: "TopTeams",
             fields: () => ({
-                limit: GraphQLFloat,
-                teams: new GraphQLList(TeamType)
+                limit: { type: GraphQLFloat },
+                teams: { type: new GraphQLList(TeamType) }
             })
         }),
         args: {
@@ -256,9 +256,9 @@ const teamQueries = {
                 .find({ type: { $not: { $eq: 'CUP' }}}, 'standings')
                 .lean()
                 .then((competitions) => {
-                    console.log(competitions);
                     const topTeamIds = [];
-                    const maxCompetitionStandings = Math.max(competitions.map((competition) => competition.standings.length));
+                    const arrayOfCompetitionStandingLengths = competitions.map((competition) => competition.standings.length)
+                    const maxCompetitionStandings = Math.max(...arrayOfCompetitionStandingLengths);
 
                     for(let standingIndex = 0; standingIndex < maxCompetitionStandings && topTeamIds.length <= limit; standingIndex++) {
                         for(let competitionIndex = 0; competitionIndex < competitions.length; competitionIndex++) {
