@@ -1,7 +1,6 @@
 const Match = require('../../../models/Match');
 const H2H = require('../../../models/H2H');
 
-const deleteRedundantMatches = require('./deleteRedundantMatches');
 const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
 const { prepareForBulkWrite, prepareMatchForUpload, refineH2HValues } = require('../../../helpers/mongoose');
 
@@ -15,9 +14,6 @@ const matchesHandler = () => new Promise(
 
             await saveMainMatches(matchesToSave);
             await handleMatchesWithoutHead2Head();
-
-            console.warn('Deleting irrelevant matches and calculating matches outcomes...');
-            await deleteRedundantMatches();
 
             resolve();
         } catch (error) {
