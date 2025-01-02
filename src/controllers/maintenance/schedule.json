@@ -1,16 +1,11 @@
 {
   "matches": {
-    "lastUpdated": "Fri, 27 Dec 2024 12:45:45 GMT",
+    "lastUpdated": "Thu, 02 Jan 2025 10:14:05 GMT",
     "status": null,
-    "updateSchedule": [
-      {
-        "start": "Fri, 27 Dec 2024 19:30:00 GMT",
-        "end": "Fri, 27 Dec 2024 22:33:00 GMT"
-      }
-    ]
+    "updateSchedule": []
   },
   "server": {
-    "lastUpdated": "Fri, 27 Dec 2024 12:45:45 GMT",
+    "lastUpdated": "Thu, 02 Jan 2025 10:14:05 GMT",
     "status": "SUCCESS"
   }
 }
