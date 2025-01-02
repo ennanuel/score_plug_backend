@@ -21,12 +21,12 @@ function getFromToDates(from, to) {
     else fromDate = new Date();
     if (to) toDate = new Date(to);
     else toDate = getTommorowDate(fromDate);
-    return { startDate: fromDate.toLocaleDateString(), endDate: toDate.toLocaleDateString() };
+    return { startDate: fromDate.toDateString(), endDate: toDate.toDateString() };
 };
 
 const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
 
-const checkMatchScheduleDate = (scheduleDate) => (new Date(scheduleDate)).toLocaleDateString() === (new Date()).toLocaleDateString();
+const checkMatchScheduleDate = (scheduleDate) => (new Date(scheduleDate)).toDateString() === (new Date()).toDateString();
 
 const checkServerScheduleDateAndStatus = (scheduleDate, status) => (Date.now() - (new Date(scheduleDate)).getTime()) < ONE_DAY_IN_MS && status === 'SUCCESS';
 
