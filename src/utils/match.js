@@ -22,6 +22,25 @@ const DEFAULT_TEAM_AGGREGATE = {
     totalGoals: 0
 };
 
+const rearrangeMatchScore = (match, headToHeadAggregates) => ({ 
+    ...match, 
+        score: { 
+        ...match.score, 
+        firstHalf: { 
+            home: match.homeTeam === headToHeadAggregates.homeTeam ? match.score.firstHalf.home : match.score.firstHalf.away, 
+            away: match.awayTeam === headToHeadAggregates.awayTeam ? match.score.firstHalf.away : match.score.firstHalf.home
+        }, 
+        secondHalf: { 
+            home: match.homeTeam === headToHeadAggregates.homeTeam ? match.score.secondHalf.home : match.score.secondHalf.away, 
+            away: match.awayTeam === headToHeadAggregates.awayTeam ? match.score.secondHalf.away : match.score.secondHalf.home
+        }, 
+        fullTime: { 
+            home: match.homeTeam === headToHeadAggregates.homeTeam ? match.score.fullTime.home : match.score.fullTime.away, 
+            away: match.awayTeam === headToHeadAggregates.awayTeam ? match.score.fullTime.away : match.score.fullTime.home
+        }
+    } 
+});
+
 function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
     const matchesToUpdate = [];
     for (let currentMatch of currentMatches) {
@@ -249,6 +268,7 @@ function resolveMatchTimeFormat(match) {
 }
 
 module.exports = {
+    rearrangeMatchScore,
     updateMatchStatusAndScore,
     createMatchFilterRegExp,
     getMatchWithTeamData,
