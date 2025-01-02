@@ -7,7 +7,10 @@ const PlayerSchema = Schema({
     firstName: String,
     lastName: String,
     name: String,
-    position: String,
+    position: {
+        area: String,
+        specialty: String
+    },
     dateOfBirth: Date,
     nationality: String,
     shirtNumber: Number,
