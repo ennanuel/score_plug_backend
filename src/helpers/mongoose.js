@@ -43,8 +43,25 @@ const prepareMatchForUpload = (match) => Match.findOneAndUpdate(
     { new: true, upsert: true }
 );
 
+const preparePlayerForBulkWrite = (player) => prepareForBulkWrite({
+    ...player, 
+    position: {
+        area: (player.position === 'goalkeeper' ? 
+            'goalkeeper' :
+            player.position === 'defence' || player.position === 'centre-back' || player.position === 'left-back' || player.position === 'right-back' ?
+            'defence' :
+            player.position === 'midfield' || player.position === 'attacking midfield' || player.position === 'defensive midfield' || player.position === 'central midfield' || player.position === 'left midfield' || player.position === 'right midfield' ?
+            'midfield' :
+            player.position === 'offence' || player.position === 'centre-forward' || player.position === 'left winger' || player.position === 'right winger' ?
+            'offence' :
+            'any'),
+        specialty: player.position
+    }
+});
+
 
 module.exports = {
+    preparePlayerForBulkWrite,
     prepareForBulkWrite,
     refineMatchValues,
     refineH2HValues,
