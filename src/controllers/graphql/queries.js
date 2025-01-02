@@ -29,7 +29,7 @@ const matchQueries = {
         },
         resolve(parent, args) {
             const { limit = 10, page = 0, from, to, status } = args;
-            const { startDate, endDate } = getFromToDates(from);
+            const { startDate, endDate } = getFromToDates(from, to);
             const statusRegExp = createMatchFilterRegExp(status);
             const matches = Match.find({
                 $and: [
@@ -107,22 +107,43 @@ const matchQueries = {
         }
     },
     similarMatches: {
-        type: new GraphQLList(MatchType),
+        type: new GraphQLObjectType({
+            name: "SimilarMatches", 
+            fields: () => ({
+                competition: { type: CompetitionType },
+                matches: { type: new GraphQLList(MatchType) }
+            })
+        }),
         args: { 
             id: { type: GraphQLID },
             limit: { type: GraphQLFloat }
         }, 
         resolve(parent, args) {
-            const { id, limit = 6 } = args;
-            const similarMatches = Match
-                .find({
-                    _id: { $ne: id },
-                    isMain: true
+            const { id, limit = 10 } = args;
+
+            const result = Match
+                .findById(id)
+                .lean()
+                .then((match) => {
+                    return Competition
+                        .findById(match.competition)
+                        .lean()
+                        .then((competition) => {
+                            const similarMatches = Match
+                                .find({ 
+                                    competition: match.competition, 
+                                    $or: [
+                                        { utcDate: { $gte: (new Date(match.utcDate)).toDateString() } },
+                                        { utcDate: { $gte: (new Date(Date.now())).toDateString() } }
+                                    ]
+                                })
+                                .limit(limit);
+                            
+                            return { competition, matches: similarMatches };
+                        })
                 })
-                // TODO: Fix the sort logic
-                .sort({ utcDate: -1 })
-                .limit(limit);
-            return similarMatches
+                
+            return result
         }
     },
     match: {
@@ -170,11 +191,13 @@ const competitionQueries = {
     activeCompetitions: {
         type: new GraphQLList(CompetitionType),
         args: {
+            from: { type: GraphQLString },
+            to: { type: GraphQLString },
             isLive: { type: GraphQLBoolean }
         },
         resolve(parent, args) {
-            const { isLive } = args;
-            const { startDate, endDate } = getFromToDates();
+            const { isLive, from, to } = args;
+            const { startDate, endDate } = getFromToDates(from, to);
             const matchStatusRegex = createMatchFilterRegExp(isLive ? 'in_play' : '');
             const activeCompetitions = Match
                 .find({
@@ -237,6 +260,26 @@ const teamQueries = {
         },
         resolve(parent, args) {
             return Team.findById(args.id);
+        }
+    },
+    teamNextFixtures: {
+        type: new GraphQLList(MatchType),
+        args: { 
+            teamId: { type: GraphQLID },
+            limit: { type: GraphQLFloat }
+        },
+        resolve(parent, args) {
+            const { limit, teamId } = args;
+            const matches = Match
+                .find({ 
+                    status: "TIMED", 
+                    $or: [
+                        { homeTeam: teamId }, 
+                        { awayTeam: teamId }
+                    ] 
+                })
+                .limit(limit);
+            return matches;
         }
     },
     topTeams: {
