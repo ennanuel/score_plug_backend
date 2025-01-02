@@ -1,9 +1,9 @@
 const Match = require('../../../models/Match');
 const H2H = require('../../../models/H2H');
 const Team = require('../../../models/Team');
-const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails, reduceToArrayOfMatchIds } = require('../../../helpers/reduce');
+const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails } = require('../../../helpers/reduce');
 const { getDateFrom } = require("../../../helpers/getDate");
-const { expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchPrediction } = require('../../../utils/match');
+const { expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchPrediction, rearrangeMatchScore } = require('../../../utils/match');
 const { prepareForBulkWrite } = require('../../../helpers/mongoose');
         
 const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? { main: 'home', other: 'away' } : { main: 'away', other: 'home' };
@@ -11,9 +11,8 @@ const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? {
 const deleteRedundantMatches = () => new Promise(
     async function (resolve, reject) { 
         try {
-            const mainMatchesUpdated = await checkAndUpdateMainMatches();
-            await deleteIrrelevantPreviousMatches();
-            await handleOutdatedHead2Head(mainMatchesUpdated);
+            await handleIrrelevantMatches();
+            await handleOutdatedHead2Head();
 
             console.warn("Updating Head to Heads");
             await updateHeadToHeadMatches();
@@ -37,23 +36,15 @@ async function checkAndUpdateMainMatches() {
     return expiredMatches;
 };
 
-async function deleteIrrelevantPreviousMatches() {
-    const teams = await Team.find({}, "_id").lean();
-    const h2hs = await H2H.find({}, "matches").lean();
-    const arrayOfPreviousMatchIdsMatchIds = await Promise.all(teams.map(getTeamPreviousMatchIds));
-    const arrayOfH2HMatchIds = await Promise.all(h2hs.map(getH2HMatchIds));
-
-    const totalArrayOfMatchIds = [...arrayOfH2HMatchIds, ...arrayOfPreviousMatchIdsMatchIds];
-    const matchesWithTheirPositionForEachTeam = totalArrayOfMatchIds.reduce(reduceToObjectWithIdAsKey, {});
-
-    for (let [matchId, matchPositions] of Object.entries(matchesWithTheirPositionForEachTeam)) {
-        if (matchPositions.some(position => position < 4)) continue;
-        await Match.findByIdAndDelete(matchId);
-    }
+async function handleIrrelevantMatches() {
+    await handleExpiredH2HMatches();
+    await handleExpiredPreviousMatches();
 };
 
 async function handleOutdatedHead2Head(matches) {
-    for(let match of matches) {
+    const outdatedMatches = await checkAndUpdateMainMatches();
+
+    for(let match of outdatedMatches) {
         const otherMatchesWithSameHead2Head = await Match.countDocuments({ head2head: match.head2head });
 
         if(otherMatchesWithSameHead2Head) continue;
@@ -66,10 +57,35 @@ async function handleOutdatedHead2Head(matches) {
         const matchesToDelete = head2headToDelete.matches.filter((matchId) => !matchesIdsInH2HThatAreStillPrevMatches.includes(matchId));
 
         await head2headToDelete.remove();
-        await Match.deleteMany({ _id: { $in: [matchesToDelete] }});
         await Match.updateMany({ _id: { $in: [match._id, ...matchesIdsInH2HThatAreStillPrevMatches] } }, { isHead2Head: false, head2head: null });
+        await Match.deleteMany({ $or: [{ _id: { $in: matchesToDelete } }, { isPrevMatch: false, isHead2Head: true }] });
     }
-}
+};
+
+async function handleExpiredPreviousMatches() {
+    const teams = await Team.find({}, "_id").lean();
+    const arrayOfPreviousMatchIds = await Promise.all(teams.map(getTeamPreviousMatchIds));
+
+    const matchesWithTheirPositionForEachTeam = arrayOfPreviousMatchIds.reduce(reduceToObjectWithIdAsKey, {});
+
+    for (let [matchId, matchPositions] of Object.entries(matchesWithTheirPositionForEachTeam)) {
+        if (matchPositions.some(position => position < 4)) continue;
+        await Match.findByIdAndUpdate(matchId, { isPrevMatch: false });
+    }
+};
+
+async function handleExpiredH2HMatches() {
+    const h2hs = await H2H.find({}, 'matches');
+
+    for(let h2h of h2hs) {
+        const matches = await Match
+            .find({ _id: { $in: h2h.matches } })
+            .sort({ utcDate: -1 });
+        
+        await Match.updateMany({ _id: { $in: matches.slice(5, ) } }, { $set: { isHead2Head: false } });
+        await Match.updateMany({ _id: { $in: matches.slice(0, 5) } }, { $set: { isHead2Head: true } });
+    }
+};
 
 async function getTeamPreviousMatchIds (team) {
     const teamPrevMatches = await Match.find(
@@ -84,19 +100,7 @@ async function getTeamPreviousMatchIds (team) {
 
     const prevMatchesIds = teamPrevMatches.map(match => match._id);
     return prevMatchesIds;
-}
-
-async function getH2HMatchIds (h2h) {
-    const h2hMatches = await Match.find(
-        {
-            head2head: h2h._id,
-            isHead2Head: true
-        }
-    ).sort({ utcDate: -1 }).lean();
-
-    const h2hMatchesIds = h2hMatches.map(match => match._id);
-    return h2hMatchesIds;
-}
+};
 
 const updateExpiredMatches = (match) => {
     match.isMain = false;
@@ -164,7 +168,9 @@ async function updateHeadToHeadMatches() {
                     awayTeam: { id: headToHead.aggregates.awayTeam, wins: 0, draws: 0, losses: 0, totalGoals: 0 }
                 }
             };
-            const { numberOfMatches, firstHalf, fullTime } = matches.reduce(reduceToH2HDetails, initialValues);
+            const { numberOfMatches, firstHalf, fullTime } = matches
+                .map(match => rearrangeMatchScore(match, headToHead.aggregates))
+                .reduce(reduceToH2HDetails, initialValues);
 
             headToHead.aggregates.numberOfMatches = numberOfMatches;
             headToHead.aggregates.halfTime = firstHalf;
