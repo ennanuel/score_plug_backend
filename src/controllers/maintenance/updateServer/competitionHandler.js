@@ -2,7 +2,7 @@ const Competition = require('../../../models/Competition');
 const Team = require('../../../models/Team');
 const Player = require('../../../models/Player');
 const { fetchHandler, delay } = require('../../../helpers/fetchHandler');
-const { prepareForBulkWrite } = require("../../../helpers/mongoose");
+const { preparePlayerForBulkWrite } = require("../../../helpers/mongoose");
 
 const { getYesterdayDate } = require("../../../helpers/getDate");
 const { COMPETITION_RANKINGS } = require('../../../constants');
@@ -155,9 +155,10 @@ function changeCompetitionStandingsTeamsToJustId (standing) {
 
 async function saveTeamPlayers (team, i) {
     try {
-        const players = team.squad.map(player => prepareForBulkWrite({ ...player, _id: player.id }));
+        const players = team.squad.map(player => preparePlayerForBulkWrite({ ...player, _id: player.id, position: player.position?.toLowerCase() }));
         await Player.bulkWrite(players);
         const squad = players.map(player => player._id);
+
         return Team.findOneAndUpdate({ _id: team.id }, { $set: { ...team, _id: team.id, squad } }, { new: true, upsert: true });
     } catch (error) {
         throw error;
