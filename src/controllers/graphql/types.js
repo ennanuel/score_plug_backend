@@ -363,49 +363,26 @@ const CompetitionType = new GraphQLObjectType({
             args: {
                 from: { type: GraphQLString },
                 to: { type: GraphQLString },
-                status: { type: GraphQLString }
+                limit: { type: GraphQLFloat },
+                status: { type: GraphQLString },
+                sort: { type: GraphQLFloat }
             },
             resolve(parent, args) {
-                const { from, to, status } = args;
+                const { from, to, status, sort, limit = 90 } = args;
                 const { startDate, endDate } = getFromToDates(from, to);
                 const statusRegExp = createMatchFilterRegExp(status);
 
-                return Match.find({
-                    competition: parent._id,
-                    isMain: true,
-                    status: { $regex: statusRegExp },
-                    $and: [
-                        { utcDate: { $gte: startDate } },
-                        { utcDate: { $lte: endDate } }
-                    ]
-                });
-            }
-        },
-        highlightMatches: {
-            type: new GraphQLObjectType({
-                name: "CompetitionHighlightMatches",
-                fields: () => ({
-                    totalPages: { type: GraphQLFloat },
-                    matches: { type: new GraphQLList(MatchType) }
-                })
-            }),
-            args: {
-                limit: { type: GraphQLFloat },
-                page: { type: GraphQLFloat }
-            },
-            resolve(parent, args) {
-                const { page = 0, limit = 3 } = args;
-
-                const matches = Match
+                return Match
                     .find({
-                        competition: parent._id
+                        competition: parent._id,
+                        status: { $regex: statusRegExp },
+                        $and: [
+                            { utcDate: { $gte: startDate } },
+                            { utcDate: { $lte: endDate } }
+                        ]
                     })
                     .limit(limit)
-                    .skip(page * limit)
-                    .sort({ utcDate: -1 });
-                const totalPages = Match.countDocuments({ });
-
-                return { matches, totalPages }
+                    .sort({ utcDate: sort ? sort : 1 });
             }
         },
         standings: { type: new GraphQLList(StandingType) },
@@ -706,7 +683,13 @@ const TeamType = new GraphQLObjectType({
             type: CompetitionType,
             resolve(parent, args) {
                 return Competition
-                    .findOne({ type: "LEAGUE", 'standings.table': { $elemMatch: { team: parent._id } } });
+                    .find({ 'standings.table': { $elemMatch: { team: parent._id } } })
+                    .lean()
+                    .then((competitions) => {
+                        const favorableCompetition = competitions.filter((competition) => competition.type === 'LEAGUE');
+                        if((favorableCompetition.length)) return favorableCompetition[0];
+                        else return competitions[0];
+                    });
             }
         },
         tablePosition: {
