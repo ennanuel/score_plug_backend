@@ -322,8 +322,101 @@ const teamQueries = {
     }
 };
 
+const searchQueries = {
+    competitionsSearch: {
+        type: new GraphQLObjectType({
+            name: "CompetitionSearch",
+            fields: () => ({
+                count: { type: GraphQLFloat },
+                result: { type: new GraphQLList(CompetitionType) }
+            }),
+        }),
+        args: {
+            q: { type: GraphQLString }
+        },
+        resolve(parent, args) {
+            const { q = '' } = args;
+            const regex = new RegExp(q, 'i');
+            if(!q) return null;
+            const count = Competition.countDocuments({ name: { $regex: regex } });
+            const result = Competition.find({ name: { $regex: regex } });
+
+            return { count, result }
+        }
+    },
+    teamsSearch: {
+        type: new GraphQLObjectType({
+            name: "TeamSearch",
+            fields: () => ({
+                count: { type: GraphQLFloat },
+                result: { type: new GraphQLList(TeamType) }
+            })
+        }),
+        args: {
+            q: { type: GraphQLString }
+        },
+        resolve(parent, args) {
+            const { q = '' } = args;
+            if(!q) return null;
+            const regex = new RegExp(q, 'i');
+            const count = Team.countDocuments({ $or: [
+                { name: { $regex: regex } },
+                { shortName: { $regex: regex } },
+                { tla: { $regex: regex } },
+            ]});
+            const result = Team.find({ $or: [
+                { name: { $regex: regex } },
+                { shortName: { $regex: regex } },
+                { tla: { $regex: regex } },
+            ]});
+
+            return { count, result }
+        }
+    },
+    matchesSearch: {
+        type: new GraphQLObjectType({
+            name: "MatchSearch",
+            fields: () => ({
+                count: { type: GraphQLFloat },
+                result: { type: new GraphQLList(MatchType) }
+            })
+        }),
+        args: {
+            q: { type: GraphQLString }
+        },
+        resolve(parent, args) {
+            const { q = '' } = args;
+            const regex = new RegExp(q, 'i');
+            if(!q) return null
+            const result = Team
+                .find({ $or: [
+                    { name: { $regex: regex } },
+                    { shortName: { $regex: regex } },
+                    { tla: { $regex: regex } },
+                ]})
+                .lean()
+                .then((teams) => {
+                    const teamIds = teams.map(({ _id }) => _id);
+                    const count = Match.countDocuments({ $or: [
+                        { homeTeam: { $in: teamIds } },
+                        { awayTeam: { $in: teamIds } },
+                    ]});
+                    const matches = Match.find({ $or: [
+                        { homeTeam: { $in: teamIds } },
+                        { awayTeam: { $in: teamIds } },
+                    ]});
+
+                    return { count, result: matches }
+                })
+
+            return result;
+        }
+    }
+}
+
 module.exports = {
     competitionQueries,
     teamQueries,
-    matchQueries
+    matchQueries,
+    searchQueries
 }
