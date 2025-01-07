@@ -334,6 +334,7 @@ const CompetitionType = new GraphQLObjectType({
         code: { type: GraphQLString },
         type: { type: GraphQLString },
         emblem: { type: GraphQLString },
+        ranking: { type: GraphQLFloat },
         currentSeason: {  type: CurrentSeasonType},
         startDate: { type: GraphQLString },
         endDate: { type: GraphQLString },
@@ -496,6 +497,12 @@ const PlayerType = new GraphQLObjectType({
         id: { type: GraphQLID },
         _id: { type: GraphQLID },
         name: { type: GraphQLString },
+        team: { 
+            type: TeamType,
+            resolve(parent) {
+                return Team.findOne({ squad: parent._id })
+            }
+        },
         position: { 
             type: new GraphQLObjectType({
                 name: "PlayerPosition",
@@ -724,9 +731,9 @@ const TeamType = new GraphQLObjectType({
     })
 });
 
-
 module.exports = {
     MatchType,
     CompetitionType,
-    TeamType
+    TeamType,
+    PlayerType
 }
