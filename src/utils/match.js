@@ -1,6 +1,5 @@
 const H2H = require('../models/H2H');
 const Team = require("../models/Team");
-const Competition = require('../models/Competition');
 const Match = require('../models/Match');
 
 const {
@@ -11,8 +10,6 @@ const {
 } = require("../constants");
 
 const { getRegularMatchMinutes, getExtraMatchTimeMinutes } = require('../helpers');
-
-const getCompetition = (competitionId) => Competition.findById(competitionId, 'area name emblem').lean();
 
 
 const DEFAULT_TEAM_AGGREGATE = {
@@ -61,24 +58,28 @@ function createMatchFilterRegExp(filter) {
     return regExp;
 };
 
-async function getMatchWithTeamData(match) {
+async function getMatchTeams(match) {
     const teams = await Team.find({ _id: { $in: [match.homeTeam, match.awayTeam] } }).lean();
-    const [homeTeam, awayTeam] = teams.sort((team) => team._id == match.homeTeam ? -1 : 1);
-    const newMatchData = { ...match, homeTeam, awayTeam };
-    return newMatchData;
-}
+    const [homeTeam, awayTeam] = teams.sort(team => team._id === match.homeTeam ? -1 : 1);
 
-async function expandMatchTeamsAndCompetition(match) {
-    const competition = await getCompetition(match.competition);
-    const { homeTeam, awayTeam } = await getMatchWithTeamData(match);
-    const expandedMatch = { ...match, homeTeam, awayTeam, competition };
-    return expandedMatch;
-};
+    return {
+        ...match,
+        homeTeam,
+        awayTeam
+    };
+}
 
 async function getMatchHead2Head(h2hId) {
     const head2head = await H2H.findById(h2hId).lean();
-    if (!head2head) return [];
-    const head2headMatches = await Match.find({ _id: { $in: head2head.matches } }).lean();
+    if (!head2head) return {};
+    const head2headMatches = await Match.find({ 
+        _id: { $in: head2head.matches },
+        $or: [
+            { homeTeam: head2head.aggregates.homeTeam, awayTeam: head2head.aggregates.awayTeam },
+            { homeTeam: head2head.aggregates.awayTeam, awayTeam: head2head.aggregates.homeTeam }
+        ],
+        status: "FINISHED"
+    }).lean();
     head2head.matches = head2headMatches;
     return head2head;
 };
@@ -101,11 +102,13 @@ async function getMatchHead2HeadAndPreviousMatches(match) {
     const arrangedHead2Head = arrangeHead2HeadTeams({ head2head: matchHead2Head, homeTeamId: match.homeTeam._id, awayTeamId: match.awayTeam._id });
 
     const homeTeamPreviousMatches = await Match.find({
-        $or: [{ homeTeam: match.homeTeam._id }, { awayTeam: match.homeTeam._id }],
+        $or: [{ homeTeam: match.homeTeam }, { awayTeam: match.homeTeam._id }],
+        status: "FINISHED",
         isPrevMatch: true
     }).lean();
     const awayTeamPreviousMatches = await Match.find({
-        $or: [{ homeTeam: match.awayTeam._id }, { awayTeam: match.awayTeam._id }],
+        $or: [{ homeTeam: match.awayTeam }, { awayTeam: match.awayTeam._id }],
+        status: "FINISHED",
         isPrevMatch: true
     }).lean();
 
@@ -122,7 +125,6 @@ function calculateOutcomePercentage({ homeTeam, awayTeam, total }, [key1, key2])
     const secondFactor = homeTeam.prevMatches[key1] + awayTeam.prevMatches[key2];
     const totalFactors = firstFactor + secondFactor;
     const outcomePercentage = ((totalFactors * 100) / (total + 0.00001)).toFixed(2);
-    if (/nan/i.test(+outcomePercentage)) console.log(outcomePercentage, firstFactor, secondFactor, totalFactors, total);
     return +outcomePercentage;
 };
 
@@ -137,8 +139,6 @@ function calculateGoalOutcomePercentage({ homeTeam, awayTeam, total, goals }) {
 
     const overGoalsPrediction = Math.min(goalsPercentage, 100);
     const underGoalsPrediction = 100 - overGoalsPrediction;
-
-    if ([overGoalsPrediction, goalsPercentage, totalGoals, averageGoals, total].includes("NaN")) console.log(overGoalsPrediction, goalsPercentage, totalGoals, averageGoals, total)
 
     return { over: overGoalsPrediction, under: underGoalsPrediction };
 };
@@ -271,8 +271,7 @@ module.exports = {
     rearrangeMatchScore,
     updateMatchStatusAndScore,
     createMatchFilterRegExp,
-    getMatchWithTeamData,
-    expandMatchTeamsAndCompetition,
+    getMatchTeams,
     getMatchHead2HeadAndPreviousMatches,
     getMatchOutcome,
     getMatchPrediction,
