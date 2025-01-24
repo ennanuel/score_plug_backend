@@ -97,25 +97,11 @@ function arrangeHead2HeadTeams({ head2head, homeTeamId, awayTeamId }) {
     return arrangedHead2Head;
 }
 
-async function getMatchHead2HeadAndPreviousMatches(match) {
+async function getMatchHead2Head(match) {
     const matchHead2Head = await getMatchHead2Head(match.head2head);
     const arrangedHead2Head = arrangeHead2HeadTeams({ head2head: matchHead2Head, homeTeamId: match.homeTeam._id, awayTeamId: match.awayTeam._id });
 
-    const homeTeamPreviousMatches = await Match.find({
-        $or: [{ homeTeam: match.homeTeam }, { awayTeam: match.homeTeam._id }],
-        status: "FINISHED",
-        isPrevMatch: true
-    }).lean();
-    const awayTeamPreviousMatches = await Match.find({
-        $or: [{ homeTeam: match.awayTeam }, { awayTeam: match.awayTeam._id }],
-        status: "FINISHED",
-        isPrevMatch: true
-    }).lean();
-
     const result = { ...match, head2head: arrangedHead2Head };
-    
-    result.homeTeam.previousMatches = homeTeamPreviousMatches;
-    result.awayTeam.previousMatches = awayTeamPreviousMatches;
 
     return result;
 };
@@ -254,7 +240,9 @@ function getMatchMinutesPassed({ status, utcDate, score }) {
     const timePassed = currentTime - matchTime;
     const minutesPassed = Math.round(timePassed / ONE_MINUTE_IN_MS);
 
-    const getMatchMinutes = /regular/i.test(score.duration) ? getRegularMatchMinutes : getExtraMatchTimeMinutes;
+    const getMatchMinutes = /regular/i.test(score.duration) ? 
+        getRegularMatchMinutes : 
+        getExtraMatchTimeMinutes;
 
     const matchMinutes = getMatchMinutes(minutesPassed)
     return matchMinutes;
@@ -272,7 +260,7 @@ module.exports = {
     updateMatchStatusAndScore,
     createMatchFilterRegExp,
     getMatchTeams,
-    getMatchHead2HeadAndPreviousMatches,
+    getMatchHead2Head,
     getMatchOutcome,
     getMatchPrediction,
     changeMatchScoreFormat,
