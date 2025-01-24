@@ -229,6 +229,9 @@ const updateMatchesOutcomes = () => new Promise(
             const matchesToGetHead2Head = expandedMatches.map(getMatchHead2Head);
             const matchesWithHead2Head = await Promise.all(matchesToGetHead2Head);
 
+            console.log(expandedMatches.map((match) => match.head2head.aggregates));
+            console.log(matchesWithHead2Head.map((match) => ({ homeTeam: match.homeTeam, awayTeam: match.awayTeam })))
+
             const matchesWithOutcome = matchesWithHead2Head.map(getMatchPrediction);
             const preparedMatches = matchesWithOutcome.map(prepareForBulkWrite);
             await Match.bulkWrite(preparedMatches);
