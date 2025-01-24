@@ -3,7 +3,7 @@ const H2H = require('../../../models/H2H');
 const Team = require('../../../models/Team');
 const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails } = require('../../../helpers/reduce');
 const { getDateFrom } = require("../../../helpers/getDate");
-const { getMatchHead2HeadAndPreviousMatches, getMatchPrediction, rearrangeMatchScore, getMatchTeams } = require('../../../utils/match');
+const { getMatchPrediction, rearrangeMatchScore, getMatchTeams, getMatchHead2Head } = require('../../../utils/match');
 const { prepareForBulkWrite } = require('../../../helpers/mongoose');
         
 const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? { main: 'home', other: 'away' } : { main: 'away', other: 'home' };
@@ -221,13 +221,15 @@ const updateMatchesOutcomes = () => new Promise(
                 ]
             }).lean();
 
+            console.log('%d matches found', matches.length);
+
             const matchesToExpand = matches.map(getMatchTeams);
             const expandedMatches = await Promise.all(matchesToExpand);
 
-            const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
-            const matchesWithH2HandPrevMatches = await Promise.all(matchesToGetH2HandPrevMatches);
+            const matchesToGetHead2Head = expandedMatches.map(getMatchHead2Head);
+            const matchesWithHead2Head = await Promise.all(matchesToGetHead2Head);
 
-            const matchesWithOutcome = matchesWithH2HandPrevMatches.map(getMatchPrediction);
+            const matchesWithOutcome = matchesWithHead2Head.map(getMatchPrediction);
             const preparedMatches = matchesWithOutcome.map(prepareForBulkWrite);
             await Match.bulkWrite(preparedMatches);
             resolve();
