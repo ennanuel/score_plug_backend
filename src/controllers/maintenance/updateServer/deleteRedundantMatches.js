@@ -3,16 +3,19 @@ const H2H = require('../../../models/H2H');
 const Team = require('../../../models/Team');
 const { reduceToObjectWithIdAsKey, reduceToH2HDetails, reduceToMatchDetails } = require('../../../helpers/reduce');
 const { getDateFrom } = require("../../../helpers/getDate");
-const { expandMatchTeamsAndCompetition, getMatchHead2HeadAndPreviousMatches, getMatchPrediction, rearrangeMatchScore } = require('../../../utils/match');
+const { getMatchHead2HeadAndPreviousMatches, getMatchPrediction, rearrangeMatchScore, getMatchTeams } = require('../../../utils/match');
 const { prepareForBulkWrite } = require('../../../helpers/mongoose');
         
 const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? { main: 'home', other: 'away' } : { main: 'away', other: 'home' };
 
-const deleteRedundantMatches = () => new Promise(
+const deleteHandler = () => new Promise(
     async function (resolve, reject) { 
         try {
             await handleIrrelevantMatches();
             await handleOutdatedHead2Head();
+            
+            const deletedMatches = await deleteRedundantMatches();
+            console.warn('match delete data:', deletedMatches);
 
             console.warn("Updating Head to Heads");
             await updateHeadToHeadMatches();
@@ -29,37 +32,9 @@ const deleteRedundantMatches = () => new Promise(
     }
 );
 
-async function checkAndUpdateMainMatches() {
-    const expiredMatches = await getExpiredMatches();
-    const updatedExpiredMatches = Promise.all(expiredMatches.map(updateExpiredMatches));
-    await updatedExpiredMatches;
-    return expiredMatches;
-};
-
 async function handleIrrelevantMatches() {
     await handleExpiredH2HMatches();
     await handleExpiredPreviousMatches();
-};
-
-async function handleOutdatedHead2Head(matches) {
-    const outdatedMatches = await checkAndUpdateMainMatches();
-
-    for(let match of outdatedMatches) {
-        const otherMatchesWithSameHead2Head = await Match.countDocuments({ head2head: match.head2head });
-
-        if(otherMatchesWithSameHead2Head) continue;
-        const head2headToDelete = await H2H.findById(match.head2head);
-        const matchesIdsInH2HThatAreStillPrevMatches = await Match
-            .find({ _id: { $in: head2headToDelete.matches }, isPrevMatch: true }, '_id')
-            .lean()
-            .map(({ _id }) => _id);
-
-        const matchesToDelete = head2headToDelete.matches.filter((matchId) => !matchesIdsInH2HThatAreStillPrevMatches.includes(matchId));
-
-        await head2headToDelete.remove();
-        await Match.updateMany({ _id: { $in: [match._id, ...matchesIdsInH2HThatAreStillPrevMatches] } }, { isHead2Head: false, head2head: null });
-        await Match.deleteMany({ $or: [{ _id: { $in: matchesToDelete } }, { isPrevMatch: false, isHead2Head: true }] });
-    }
 };
 
 async function handleExpiredPreviousMatches() {
@@ -87,6 +62,59 @@ async function handleExpiredH2HMatches() {
     }
 };
 
+
+async function handleOutdatedHead2Head() {
+    const outdatedMatches = await checkAndUpdateMainMatches();
+    let deletedH2Hs = 0;
+
+    for(let match of outdatedMatches) {
+        const otherMatchesWithSameHead2Head = await Match.countDocuments({ 
+            head2head: match.head2head,
+            status: "TIMED"
+        });
+
+        if(Boolean(otherMatchesWithSameHead2Head)) continue;
+        const head2headToDelete = await H2H.findById(match.head2head);
+        
+        await Match.updateMany({ 
+            _id: { 
+                $in: head2headToDelete.matches 
+            } 
+        }, { isHead2Head: false, head2head: null });
+
+        await head2headToDelete.remove();
+        deletedH2Hs++
+    };
+    
+    console.warn('%d Head-to-Heads deleted', deletedH2Hs);
+};
+
+async function checkAndUpdateMainMatches() {
+    const expiredMatches = await getExpiredMatches();
+    console.warn('%d expired matches found', expiredMatches.length);
+
+    const expiredMatchIds = expiredMatches.map((match) => match._id);
+    await updateExpiredMatches(expiredMatchIds);
+    return expiredMatches;
+};
+
+const getExpiredMatches = () => Match.find({ 
+    isMain: true,
+    utcDate: { 
+        $lt: (new Date(getDateFrom())).toISOString()
+    } 
+}).lean();
+
+const updateExpiredMatches = (matchIds) => {
+    return Match.updateMany({ _id: { $in: matchIds } }, { isMain: false });
+};
+
+
+function deleteRedundantMatches () {
+    return Match.deleteMany({ isPrevMatch: false, isHead2Head: false, isMain: false });
+}
+
+
 async function getTeamPreviousMatchIds (team) {
     const teamPrevMatches = await Match.find(
         {
@@ -101,18 +129,6 @@ async function getTeamPreviousMatchIds (team) {
     const prevMatchesIds = teamPrevMatches.map(match => match._id);
     return prevMatchesIds;
 };
-
-const updateExpiredMatches = (match) => {
-    match.isMain = false;
-    return match.save();
-}
-
-const getExpiredMatches = () => Match.find({ 
-    isMain: true,
-    utcDate: { 
-        $lt: getDateFrom() 
-    } 
-}).lean();
 
 async function updateTeamPreviousMatches() {
     const teams = await Team.find().lean();
@@ -205,7 +221,7 @@ const updateMatchesOutcomes = () => new Promise(
                 ]
             }).lean();
 
-            const matchesToExpand = matches.map(expandMatchTeamsAndCompetition);
+            const matchesToExpand = matches.map(getMatchTeams);
             const expandedMatches = await Promise.all(matchesToExpand);
 
             const matchesToGetH2HandPrevMatches = expandedMatches.map(getMatchHead2HeadAndPreviousMatches);
@@ -221,4 +237,4 @@ const updateMatchesOutcomes = () => new Promise(
     }
 )
 
-module.exports = deleteRedundantMatches;
+module.exports = deleteHandler;
