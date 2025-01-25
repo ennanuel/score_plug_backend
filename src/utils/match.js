@@ -38,18 +38,6 @@ const rearrangeMatchScore = (match, headToHeadAggregates) => ({
     } 
 });
 
-function updateMatchStatusAndScore({ previousMatches, currentMatches }) {
-    const matchesToUpdate = [];
-    for (let currentMatch of currentMatches) {
-        const previousMatch = previousMatches.find(match => match._doc._id === currentMatch.id);
-        if (previousMatch.lastUpdated === currentMatch.lastUpdated) continue;
-        previousMatch.score = currentMatch.score;
-        previousMatch.stauts = currentMatch.status;
-        matchesToUpdate.push(previousMatch.save());
-    }
-    return matchesToUpdate;
-}
-
 function createMatchFilterRegExp(filter) {
     const filterIsInPlay = filter?.toLowerCase() === 'in_play';
     const filterValue = filterIsInPlay ? 'in_play|paused' : filter;
@@ -257,7 +245,6 @@ function resolveMatchTimeFormat(match) {
 
 module.exports = {
     rearrangeMatchScore,
-    updateMatchStatusAndScore,
     createMatchFilterRegExp,
     getMatchTeams,
     getMatchHead2Head,
