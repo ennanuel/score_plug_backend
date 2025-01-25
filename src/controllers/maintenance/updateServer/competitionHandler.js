@@ -10,8 +10,11 @@ const { COMPETITION_RANKINGS } = require('../../../constants');
 const competitionHandler = () => new Promise(
     async function (resolve, reject) {
         try {
+            console.log("Starting competitions update...")
             const competitions = await getCompetitions();
             await updateCompetitionDetails(competitions);
+
+            console.log("Competition update done!")
             resolve();
         } catch (error) {
             reject(error);

@@ -10,11 +10,13 @@ const { refineMatchValues } = require("../../../helpers/mongoose");
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {
         try {
-            const matchesToSave = await getMatchesToSave();
+            console.warn("Match update starting...");
 
+            const matchesToSave = await getMatchesToSave();
             await saveMainMatches(matchesToSave);
             await handleMatchesWithoutHead2Head();
 
+            console.log("Match update done!");
             resolve();
         } catch (error) {
             reject(error);

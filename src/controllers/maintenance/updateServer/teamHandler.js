@@ -9,9 +9,13 @@ const { getTodayDate } = require('../../../helpers/getDate');
 const teamHandler = () => new Promise(
     async function (resolve, reject) {
         try {
+            console.warn("Team update running...");
+
             await handleTeamPreviousMatches();
             await deleteIrrelevantPlayers();
             await deleteIrrelevantTeams();
+
+            console.log("Team update done!");
             resolve();
         } catch (error) {
             reject(error);

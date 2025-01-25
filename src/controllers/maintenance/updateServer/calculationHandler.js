@@ -10,7 +10,7 @@ const assignMainAndOtherTeam = (homeTeamId, teamId) => homeTeamId === teamId ? {
 const calculationHandler = () => new Promise(
     async function (resolve, reject) { 
         try {
-            console.log("Starting calculations...");
+            console.warn("Starting calculations...");
 
             console.warn("Updating Head to Heads");
             await updateHeadToHeadMatches();
@@ -21,7 +21,7 @@ const calculationHandler = () => new Promise(
             console.warn("Calculating match outcomes...");
             await updateMatchesOutcomes();
 
-            console.log("Calculations done")
+            console.log("Calculations done!");
             resolve();
         } catch (error) {
             reject(error);

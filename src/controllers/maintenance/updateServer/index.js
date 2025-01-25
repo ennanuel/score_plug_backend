@@ -1,7 +1,9 @@
 const competitionHandler = require('./competitionHandler');
 const teamHandler = require('./teamHandler');
 const matchesHandler = require('./matchesHandler');
-const deleteRedundantMatches = require('./deleteRedundantMatches');
+const calculationHandler = require('./calculationHandler');
+const deleteHandler = require('./deleteHandler');
+
 const { createUpdateSchedule, serverUpdateScheduleJSON, resetScheduleJSON, getScheduleJSON } = require('../../../utils/scheduler');
 const { checkServerScheduleDateAndStatus } = require('../../../helpers/getDate');
 
@@ -10,21 +12,18 @@ async function runFunctionsToUpdateServer() {
         resetScheduleJSON();
         serverUpdateScheduleJSON("PENDING");
 
-        console.log("starting Competitions...");
+        console.log("Starting server update...");
+
         await competitionHandler();
-
-        console.warn('starting Teams...');
         await teamHandler();
-
-        console.warn('starting Matches...');
         await matchesHandler();
+        await deleteHandler();
+        await calculationHandler();
 
-        console.warn('Cleaning up, Deleting irrelevant matches and calculating matches outcomes...');
-        await deleteRedundantMatches();
+        console.log('Server updated!');
 
-        console.log('success!');
         await createUpdateSchedule();
-        
+
         serverUpdateScheduleJSON("SUCCESS");
     } catch (error) {
         console.error(error);
