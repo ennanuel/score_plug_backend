@@ -1,5 +1,5 @@
 const fs = require("fs");
-const { getTodayDate, getTommorowDate, checkMatchScheduleDate } = require("../helpers/getDate");
+const { getTodayDate, getTomorrowDate, checkMatchScheduleDate } = require("../helpers/getDate");
 const { reduceMatchToUpdateSchedule } = require("../helpers/reduce");
 const Match = require("../models/Match");
 const path = require("path");
@@ -15,7 +15,7 @@ async function createUpdateSchedule() {
         if (isToday) throw new Error("Schedule for today has already been created");
 
         const todaysDate = getTodayDate().toLocaleDateString();
-        const tomorrowsDate = getTommorowDate().toLocaleDateString();
+        const tomorrowsDate = getTomorrowDate().toLocaleDateString();
         const matchesToBePlayedToday = await Match.find({
             isMain: true,
             $and: [
@@ -175,6 +175,11 @@ function checkIfServerIsUpdating() {
     }
 };
 
+const checkServerScheduleDateAndStatus = () => {
+    const schedule = getScheduleJSON();
+    (Date.now() - (new Date(schedule.server.lastUpdated)).getTime()) < ONE_DAY_IN_MS && schedule.server.status === 'SUCCESS'
+};
+
 
 function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, headToHeadsAdded, headToHeadsDeleted, totalHeadToHeads }) {
     try {
@@ -197,6 +202,7 @@ function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, he
 };
 
 module.exports = {
+    checkServerScheduleDateAndStatus,
     createUpdateSchedule,
     updateMatchSchedule,
     getScheduleJSON,
