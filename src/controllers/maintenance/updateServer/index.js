@@ -11,8 +11,8 @@ const Match = require('../../../models/Match');
 async function runFunctionsToUpdateServer() {
     try { 
         updateServerScheduleJSON("PENDING");
-        const initialMatchCount = await Match.find({}).count();
-        const initialH2HCount = await H2H.find({}).count();
+        const initialMatchCount = await Match.countDocuments();
+        const initialH2HCount = await H2H.countDocuments();
 
         console.log("Starting server update...");
 
@@ -20,14 +20,14 @@ async function runFunctionsToUpdateServer() {
         await teamHandler();
         await matchesHandler();
 
-        const intermittentMatchCount = await Match.find({}).count();
-        const intermittentH2HCount = await H2H.find({}).count();
+        const intermittentMatchCount = await Match.countDocuments()
+        const intermittentH2HCount = await H2H.countDocuments()
 
         await deleteHandler();
         await calculationHandler();
 
-        const finalMatchCount = await Match.find({}).count();
-        const finalH2HCount = await H2H.find({}).count();
+        const finalMatchCount = await Match.countDocuments()
+        const finalH2HCount = await H2H.countDocuments();
 
         const matchesAdded = intermittentMatchCount - initialMatchCount;
         const matchesDeleted = intermittentMatchCount - finalMatchCount;
