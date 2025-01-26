@@ -1,20 +1,16 @@
 {
   "matches": {
-    "lastUpdated": "Sun, 05 Jan 2025 17:37:38 GMT",
+    "lastUpdated": "Sun, 26 Jan 2025 04:24:06 GMT",
     "status": null,
     "updateSchedule": [
       {
-        "start": "Sun, 05 Jan 2025 14:00:00 GMT",
-        "end": "Sun, 05 Jan 2025 22:48:00 GMT"
-      },
-      {
-        "start": "Sun, 05 Jan 2025 11:30:00 GMT",
-        "end": "Sun, 05 Jan 2025 13:48:00 GMT"
+        "start": "Sun, 26 Jan 2025 11:15:00 GMT",
+        "end": "Sun, 26 Jan 2025 22:48:00 GMT"
       }
     ]
   },
   "server": {
-    "lastUpdated": "Sun, 05 Jan 2025 17:37:38 GMT",
+    "lastUpdated": "Sun, 25 Jan 2025 04:24:06 GMT",
     "status": "SUCCESS"
   }
 }
