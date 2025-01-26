@@ -1,5 +1,5 @@
 const { getScheduleJSON } = require("../utils/scheduler");
-const route = require('express').Router();
+const router = require('express').Router();
 
 
 function getSchedule(req, res) {
@@ -14,4 +14,4 @@ function getSchedule(req, res) {
 
 router.get('/', getSchedule);
 
-module.exports = route
+module.exports = router
