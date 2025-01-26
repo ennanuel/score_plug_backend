@@ -4,21 +4,45 @@ const matchesHandler = require('./matchesHandler');
 const calculationHandler = require('./calculationHandler');
 const deleteHandler = require('./deleteHandler');
 
-const { createUpdateSchedule, serverUpdateScheduleJSON, resetScheduleJSON, getScheduleJSON } = require('../../../utils/scheduler');
+const { createUpdateSchedule, updateServerScheduleJSON, setServerUpdateHistory } = require('../../../utils/scheduler');
 const { checkServerScheduleDateAndStatus } = require('../../../helpers/getDate');
+const H2H = require('../../../models/H2H');
+const Match = require('../../../models/Match');
 
 async function runFunctionsToUpdateServer() {
     try { 
-        resetScheduleJSON();
-        serverUpdateScheduleJSON("PENDING");
+        updateServerScheduleJSON("PENDING");
+        const initialMatchCount = await Match.find({}).count();
+        const initialH2HCount = await H2H.find({}).count();
 
         console.log("Starting server update...");
 
         await competitionHandler();
         await teamHandler();
         await matchesHandler();
+
+        const intermittentMatchCount = await Match.find({}).count();
+        const intermittentH2HCount = await H2H.find({}).count();
+
         await deleteHandler();
         await calculationHandler();
+
+        const finalMatchCount = await Match.find({}).count();
+        const finalH2HCount = await H2H.find({}).count();
+
+        const matchesAdded = intermittentMatchCount - initialMatchCount;
+        const matchesDeleted = intermittentMatchCount - finalMatchCount;
+        const headToHeadsAdded = intermittentH2HCount - initialH2HCount;
+        const headToHeadsDeleted = intermittentH2HCount - finalH2HCount;
+
+        setServerUpdateHistory({ 
+            matchesAdded, 
+            matchesDeleted, 
+            headToHeadsAdded, 
+            headToHeadsDeleted, 
+            totalMatches: finalMatchCount, 
+            totalHeadToHeads: finalH2HCount 
+        });
 
         console.log('Server updated!');
 
@@ -33,10 +57,9 @@ async function runFunctionsToUpdateServer() {
 
 async function updateServer(req, res) {
     try {
-        const schedule = getScheduleJSON();
-        const serverIsUpToDate = checkServerScheduleDateAndStatus(schedule.server.lastUpdated, schedule.server.status);
+        const serverIsUpToDate = checkServerScheduleDateAndStatus();
         
-        if (serverIsUpToDate) throw new Error('Server up to date');
+        if (serverIsUpToDate) return res.status(409).json({ message: 'Server up to date' });
 
         runFunctionsToUpdateServer();
         return res.status(200).json({ message: 'Update Started!' });
