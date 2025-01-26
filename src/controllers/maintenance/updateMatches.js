@@ -56,7 +56,8 @@ async function executeMatchUpdate() {
                 { 
                     $and: [
                         { utcDate: { $lte: endDate } },
-                        { utcDate: { $gt: startDate } }
+                        { utcDate: { $gt: startDate } },
+                        { status: { $ne: "TIMED" } }
                     ]
                 },
                 '_id homeTeam awayTeam score status utcDate competition'
@@ -66,7 +67,9 @@ async function executeMatchUpdate() {
         const matches = fetchedMatches.reduce((matchesObject, match) => ({
             ...matchesObject,
             [match._id]: {
-                score: match.score,
+                score: {
+                    fullTime: match.score.fullTime
+                },
                 status: match.status,
                 wasUpdated: updatedMatchIds.includes(match._id),
                 scoreWasUpdated: updatedMatchScores.includes(match._id),
