@@ -41,7 +41,7 @@ const matchQueries = {
             }).sort({ utcDate: -1 }).limit(limit).skip(limit * page);
 
             const totalPages = Match
-                .find({
+                .countDocuments({
                     isMain: true,
                     status: { $regex: statusRegExp },
                     $and: [
@@ -50,7 +50,6 @@ const matchQueries = {
                         { utcDate: { $lte: endDate } }
                     ]
                 })
-                .count()
                 .then(count => Math.ceil(count / limit));
             return { matches, currentPage: page + 1, totalPages, limit };
         }
@@ -90,7 +89,7 @@ const matchQueries = {
                 .skip(limit * page);
 
             const totalPages = Match
-                .find({
+                .countDocuments({
                     isMain: true,
                     status: { $regex: statusRegExp },
                     $and: [
@@ -100,9 +99,8 @@ const matchQueries = {
                         { 'predictions.halfTime.outcome.homeWin': { $gt: 0 } }
                     ]
                 })
-                .count()
                 .then(count => Math.ceil(count / limit));
-            
+
             return { matches, currentPage: page + 1, totalPages, limit };
         }
     },
@@ -174,8 +172,7 @@ const competitionQueries = {
             const { page = 0, limit = 10 } = args;
             const competitions = Competition.find().sort({ name: -1 }).limit(limit).skip(limit * page);
             const totalPages = Competition
-                .find()
-                .count()
+                .countDocuments()
                 .then(count => Math.ceil(count / limit));
             return { competitions, totalPages, currentPage: page + 1, limit };
         }
@@ -246,8 +243,7 @@ const teamQueries = {
                 .skip(limit * page);
             
             const totalPages = Team
-                .find()
-                .count()
+                .countDocuments()
                 .then(count => Math.ceil(count / limit));
             
             return { teams, totalPages, currentPage: page + 1, limit };
