@@ -6,6 +6,7 @@ const bp = require('body-parser');
 const dotenv = require('dotenv');
 
 const maintenanceRoute = require('./src/routes/maintenance');
+const scheduleRoute = require('./src/routes/schedule');
 const schema = require('./src/routes/schema');
 
 const { app, io, server } = require('./app');
@@ -21,7 +22,8 @@ app.use(
 app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
-app.use('/images', express.static("images"));
+app.use('/', express.static("public"));
+app.use('/schedule', scheduleRoute);
 app.use('/maintenance', maintenanceRoute);
 
 app.use('/graphql', graphqlHTTP({
