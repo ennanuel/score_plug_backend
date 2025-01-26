@@ -34,10 +34,7 @@ app.use('/graphql', graphqlHTTP({
 mongoose.set('strictQuery', false);
 
 mongoose
-    .connect(process.env.DB_URL, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-    })
+    .connect(process.env.DB_URL)
     .then(() => server.listen(process.env.PORT, () => {
         console.log('server running on port %s', process.env.PORT);
 
