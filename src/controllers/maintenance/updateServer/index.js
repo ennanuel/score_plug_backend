@@ -4,8 +4,7 @@ const matchesHandler = require('./matchesHandler');
 const calculationHandler = require('./calculationHandler');
 const deleteHandler = require('./deleteHandler');
 
-const { createUpdateSchedule, updateServerScheduleJSON, setServerUpdateHistory } = require('../../../utils/scheduler');
-const { checkServerScheduleDateAndStatus } = require('../../../helpers/getDate');
+const { createUpdateSchedule, updateServerScheduleJSON, setServerUpdateHistory, checkServerScheduleDateAndStatus } = require('../../../utils/scheduler');
 const H2H = require('../../../models/H2H');
 const Match = require('../../../models/Match');
 
