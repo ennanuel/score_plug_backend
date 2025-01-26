@@ -70,7 +70,7 @@ async function handleExpiredH2HMatches() {
 
 async function handleOutdatedHead2Head() {
     const outdatedMatches = await checkAndUpdateMainMatches();
-    let deletedH2Hs = 0;
+    const head2HeadsToDelete = [];
 
     for(let match of outdatedMatches) {
         const otherMatchesWithSameHead2Head = await Match.countDocuments({ 
@@ -79,7 +79,7 @@ async function handleOutdatedHead2Head() {
         });
 
         if(Boolean(otherMatchesWithSameHead2Head)) continue;
-        const head2headToDelete = await H2H.findById(match.head2head);
+        const head2headToDelete = await H2H.findById(match.head2head).lean();
         
         await Match.updateMany({ 
             _id: { 
@@ -87,11 +87,11 @@ async function handleOutdatedHead2Head() {
             } 
         }, { isHead2Head: false, head2head: null });
 
-        await head2headToDelete.remove();
-        deletedH2Hs++
+        head2HeadsToDelete.push(head2headToDelete._id);
     };
     
-    console.warn('%d Head-to-Heads deleted', deletedH2Hs);
+    await H2H.deleteMany({ _id: { $in: head2HeadsToDelete }});
+    console.warn('%d Head-to-Heads deleted', head2HeadsToDelete.length);
 };
 
 async function checkAndUpdateMainMatches() {
