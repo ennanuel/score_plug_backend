@@ -103,7 +103,7 @@ function setMatchScheduleJSON(schedule, status) {
         scheduleJSONData.matches.status = status;
         scheduleJSONData.matches.lastUpdated = (new Date()).toUTCString();
 
-        const updatedData = JSON.stringify(scheduleJSONData, null, 2);
+        const updatedData = JSON.stringify(scheduleJSONData, null, 3);
         
         fs.writeFileSync(schedulePath, updatedData);
         return { failed: false, message: "Natch Schedule Updated" };
@@ -112,7 +112,7 @@ function setMatchScheduleJSON(schedule, status) {
     }
 }
 
-function serverUpdateScheduleJSON(status) { 
+function updateServerScheduleJSON(status) { 
     try {
         const scheduleRawData = fs.readFileSync(schedulePath);
         const scheduleJSONData = JSON.parse(scheduleRawData);
@@ -120,7 +120,7 @@ function serverUpdateScheduleJSON(status) {
         scheduleJSONData.server.status = status;
         scheduleJSONData.server.lastUpdated = (new Date()).toUTCString();
 
-        const updatedData = JSON.stringify(scheduleJSONData, null, 2);
+        const updatedData = JSON.stringify(scheduleJSONData, null, 3);
         
         fs.writeFileSync(schedulePath, updatedData);
         return { failed: false, message: "Server Schedule Updated" };
@@ -131,6 +131,7 @@ function serverUpdateScheduleJSON(status) {
 
 function resetScheduleJSON() { 
     try {
+        const schedule = getScheduleJSON();
         const resetDataObject = {
             matches: {
                 lastUpdated: null,
@@ -140,9 +141,21 @@ function resetScheduleJSON() {
             server: {
                 lastUpdated: null,
                 status: null
-            }
+            },
+            updateHistory: [
+                {
+                    date: (new Date()).toISOString(),
+                    matchesAdded: 0,
+                    matchesDeleted: 0,
+                    totalMatches: 0,
+                    headToHeadsAdded: 0,
+                    headToHeadsDeleted: 0,
+                    totalHeadToHeads: 0
+                }, 
+                ...schedule.updateHistory.slice(0, 2)
+            ]
         };
-        const resetData = JSON.stringify(resetDataObject, null, 2);
+        const resetData = JSON.stringify(resetDataObject, null, 3);
 
         fs.writeFileSync(schedulePath, resetData);
 
@@ -162,13 +175,35 @@ function checkIfServerIsUpdating() {
     }
 };
 
+
+function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, headToHeadsAdded, headToHeadsDeleted, totalHeadToHeads }) {
+    try {
+        const schedule = getScheduleJSON();
+        schedule.updateHistory[0].matchesAdded = matchesAdded;
+        schedule.updateHistory[0].matchesDeleted = matchesDeleted;
+        schedule.updateHistory[0].totalMatches = totalMatches;
+        schedule.updateHistory[0].headToHeadsAdded = headToHeadsAdded;
+        schedule.updateHistory[0].headToHeadsDeleted = headToHeadsDeleted;
+        schedule.updateHistory[0].totalHeadToHeads = totalHeadToHeads;
+
+        const stringifiedSchedule = JSON.stringify(schedule, null, 3);
+        fs.writeFileSync(schedulePath, stringifiedSchedule);
+
+        return { failed: false, message: "Schedule history updated"}
+    } catch (error) {
+        console.error(error);
+        return { failed: true, message: error.message };
+    }
+};
+
 module.exports = {
     createUpdateSchedule,
     updateMatchSchedule,
     getScheduleJSON,
     setMatchScheduleJSON,
     resetScheduleJSON,
-    serverUpdateScheduleJSON,
+    updateServerScheduleJSON,
     getTimeForNextUpdateCall,
-    checkIfServerIsUpdating
+    checkIfServerIsUpdating,
+    setServerUpdateHistory
 }
