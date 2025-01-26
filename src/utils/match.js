@@ -86,8 +86,14 @@ function arrangeHead2HeadTeams({ head2head, homeTeamId, awayTeamId }) {
 }
 
 async function getMatchHead2Head(match) {
-    const matchHead2Head = await getMatchHead2Head(match.head2head);
-    const arrangedHead2Head = arrangeHead2HeadTeams({ head2head: matchHead2Head, homeTeamId: match.homeTeam._id, awayTeamId: match.awayTeam._id });
+    const matchHead2Head = await H2H
+        .findById(match.head2head)
+        .lean();
+    const arrangedHead2Head = arrangeHead2HeadTeams({ 
+        head2head: matchHead2Head, 
+        homeTeamId: match.homeTeam._id, 
+        awayTeamId: match.awayTeam._id 
+    });
 
     const result = { ...match, head2head: arrangedHead2Head };
 
