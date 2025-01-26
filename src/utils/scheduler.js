@@ -3,7 +3,7 @@ const { getTodayDate, getTomorrowDate, checkMatchScheduleDate } = require("../he
 const { reduceMatchToUpdateSchedule } = require("../helpers/reduce");
 const Match = require("../models/Match");
 const path = require("path");
-const { ONE_MINUTE_IN_MS } = require("../constants");
+const { ONE_MINUTE_IN_MS, THIRTY_ONE_DAYS_IN_MS } = require("../constants");
 
 const schedulePath = path.join(__dirname, "../controllers/maintenance/schedule.json");
 
@@ -127,11 +127,20 @@ function updateServerScheduleJSON(status) {
     } catch (error) {
         return { failed: true, message: error.message };
     }
+};
+
+const getFilteredScheduleHistory = () => {
+    const schedule = getScheduleJSON();
+    const result = schedule.updateHistory.filter((history) => (
+        (new Date((new Date(history.date)).toDateString())).getTime() >= (new Date((new Date(Date.now() - THIRTY_ONE_DAYS_IN_MS)).toDateString()))
+    ));
+
+    return result
 }
 
 function resetScheduleJSON() { 
     try {
-        const schedule = getScheduleJSON();
+        const filteredScheduleHistory = getFilteredScheduleHistory();
         const resetDataObject = {
             matches: {
                 lastUpdated: null,
@@ -142,18 +151,7 @@ function resetScheduleJSON() {
                 lastUpdated: null,
                 status: null
             },
-            updateHistory: [
-                {
-                    date: (new Date()).toISOString(),
-                    matchesAdded: 0,
-                    matchesDeleted: 0,
-                    totalMatches: 0,
-                    headToHeadsAdded: 0,
-                    headToHeadsDeleted: 0,
-                    totalHeadToHeads: 0
-                }, 
-                ...schedule.updateHistory.slice(0, 2)
-            ]
+            updateHistory: filteredScheduleHistory
         };
         const resetData = JSON.stringify(resetDataObject, null, 3);
 
@@ -184,12 +182,32 @@ const checkServerScheduleDateAndStatus = () => {
 function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, headToHeadsAdded, headToHeadsDeleted, totalHeadToHeads }) {
     try {
         const schedule = getScheduleJSON();
-        schedule.updateHistory[0].matchesAdded = matchesAdded;
-        schedule.updateHistory[0].matchesDeleted = matchesDeleted;
-        schedule.updateHistory[0].totalMatches = totalMatches;
-        schedule.updateHistory[0].headToHeadsAdded = headToHeadsAdded;
-        schedule.updateHistory[0].headToHeadsDeleted = headToHeadsDeleted;
-        schedule.updateHistory[0].totalHeadToHeads = totalHeadToHeads;
+        const historyIndex = schedule
+            .updateHistory
+            .findIndex((history) => (new Date(history.date)).toLocaleDateString() === (new Date(Date.now())).toLocaleDateString());
+
+        if(schedule.updateHistory[historyIndex]) {
+            schedule.updateHistory[historyIndex] = {
+                date: schedule.updateHistory[historyIndex].date,
+                matchesAdded,
+                matchesDeleted,
+                totalMatches,
+                headToHeadsAdded,
+                headToHeadsDeleted,
+                totalHeadToHeads
+            }
+        } else {
+            const newHistory = { 
+                date: (new Date(Date.now())).toISOString(), 
+                matchesAdded, 
+                matchesDeleted,
+                totalMatches,
+                headToHeadsAdded,
+                headToHeadsDeleted,
+                totalHeadToHeads 
+            };
+            schedule.updateHistory = [newHistory, ...schedule.updateHistory]
+        }
 
         const stringifiedSchedule = JSON.stringify(schedule, null, 3);
         fs.writeFileSync(schedulePath, stringifiedSchedule);
