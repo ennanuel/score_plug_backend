@@ -2,73 +2,75 @@ require('dotenv').config()
 
 const HEADERS = {
     'x-auth-token': process.env.API_KEY
-}
+};
+
+const COMPETION_IMAGE_PATH = '/assets/competitions';
 
 const COMPETITION_RANKINGS = [
     {
         name: 'UEFA Champions League',
         code: 'CL',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/ucl-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/ucl-logo.png`
     },
     {
         name: 'England Premier League',
         code: 'PL',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/premier-league-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/premier-league-logo.png`
     },
     {
         name: 'La Liga',
         code: 'PD',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/laliga-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/laliga-logo.png`
     },
     {
         name: 'Bundesliga',
         code: 'BL1',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/bundesliga-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/bundesliga-logo.png`
     },
     {
         name: 'Serie A',
         code: 'SA',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/serie-a-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/serie-a-logo.png`
     },
     {
         name: 'Eredivisie',
         code: 'DED',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/eredivisie-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/eredivisie-logo.png`
     },
     {
         name: 'FIFA World Cup',
         code: 'WC',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/fifa-world-cup-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/fifa-world-cup-logo.png`
     },
     {
         name: 'Euros',
         code: 'EC',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/euros-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/euros-logo.png`
     },
     {
         name: 'England Championship',
         code: 'ELC',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/championship-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/championship-logo.png`
     },
     {
         name: 'Ligue 1',
         code: 'FL1',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/ligue-1-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/ligue-1-logo.png`
     },
     {
         name: 'Copa Libertadores',
         code: 'CLI',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/copa-libertadores-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/copa-libertadores-logo.png`
     },
     {
         name: 'Liga Portugal',
         code: 'PPL',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/liga-portugal-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETION_IMAGE_PATH}/liga-portugal-logo.png`
     },
     {
         name: 'Brazil Serie A',
         code: 'BSA',
-        emblem: `${process.env.LIVE_URL}/assets/competitions/brasil-serie-a-logo.png`
+        emblem: `${process.env.LIVE_URL}${COMPETITION_IMAGE_PATH}/brasil-serie-a-logo.png`
     },
 ];
 
