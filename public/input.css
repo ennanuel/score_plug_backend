@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+.sort-btn {
+    @apply w-10 min-w-10 max-w-10 min-h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-white/10
+}
+
+.active-sort-btn {
+    @apply w-10 min-w-10 max-w-10 min-h-10 rounded-full bg-white text-black flex items-center justify-center;
+}
+
+#loading .icon {
+    animation: rotate .5s linear infinite;
+}
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}

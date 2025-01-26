@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="../favicon/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../style.css">
+    <title>ScorePlug - Server update history</title>
+</head>
+<body class="relative min-h-screen bg-black text-white flex items-center justify-center">
+    <div class="min-h-screen p-4 pt-8 w-full max-w-[1024px] flex flex-col">
+        <div class="flex-1 flex flex-col justify-center gap-12">
+            <a href="https://scoreplug.vercel.app" class="flex items-center justify-center gap-3 pl-2 pr-6 h-10 w-fit rounded-full bg-green-400/10 hover:bg-green-400/20">
+                <img src="../assets/web-images/scoreplug-logo.png" class="w-6 h-6 object-contain" />
+                <span class="font-semibold text-base text-green-300">ScorePlug</span>
+            </a>
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <h1 class="font-bold text-[3rem] tracking-tight">Update history</h1>
+                <div class="flex items-center justify-center gap-2">
+                    <button id="asc_btn" class="sort-btn">
+                        <i class="fa fa-arrow-up"></i>
+                    </button>
+                    <button id="desc_btn" class="active-sort-btn">
+                        <i class="fa fa-arrow-down"></i>
+                    </button>
+                </div>
+            </div>
+            <ul id="history" class="flex-1 flex flex-col gap-4">
+            </ul>
+            <div id="loading" class="hidden justify-start items-center p-8 gap-4 rounded-xl bg-yellow-400/5">
+                <span class="icon flex items-center justify-center text-4xl w-16 h-16 rounded-full bg-yellow-400/10 text-yellow-400">
+                    <i class="fa fa-spinner"></i>
+                </span>
+                <div class="flex flex-col gap-1">
+                    <span class="text-3xl font-bold tracking-tight text-yellow-300">Loading</span>
+                    <span class="font-semibold text-yellow-200/50">Content loading please wait...</span>
+                </div>
+            </div>
+            <div id="error" class="hidden justify-start items-center p-8 gap-4 rounded-xl bg-red-400/5">
+                <span class="flex items-center justify-center text-4xl w-16 h-16 rounded-full bg-red-400/10 text-red-400">
+                    <i class="fa fa-close"></i>
+                </span>
+                <div class="flex flex-col gap-1">
+                    <span class="text-3xl font-bold tracking-tight text-red-300">Error</span>
+                    <span class="font-semibold text-red-200/50">It seems something went wrong.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="./script.js"></script>
+</html>
