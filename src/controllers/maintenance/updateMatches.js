@@ -1,4 +1,3 @@
-const { default: axios } = require("axios");
 const { fetchHandler } = require("../../helpers/fetchHandler");
 const { reduceToObjectWithIdAsKeys } = require("../../helpers/reduce");
 
