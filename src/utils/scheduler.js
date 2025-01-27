@@ -182,6 +182,7 @@ const checkServerScheduleDateAndStatus = () => {
 function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, headToHeadsAdded, headToHeadsDeleted, totalHeadToHeads }) {
     try {
         const schedule = getScheduleJSON();
+        const status = schedule.server.status;
         const historyIndex = schedule
             .updateHistory
             .findIndex((history) => (new Date(history.date)).toLocaleDateString() === (new Date(Date.now())).toLocaleDateString());
@@ -194,7 +195,8 @@ function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, he
                 totalMatches,
                 headToHeadsAdded,
                 headToHeadsDeleted,
-                totalHeadToHeads
+                totalHeadToHeads,
+                status
             }
         } else {
             const newHistory = { 
@@ -204,7 +206,8 @@ function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, he
                 totalMatches,
                 headToHeadsAdded,
                 headToHeadsDeleted,
-                totalHeadToHeads 
+                totalHeadToHeads,
+                status
             };
             schedule.updateHistory = [newHistory, ...schedule.updateHistory]
         }
