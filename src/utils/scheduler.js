@@ -14,8 +14,8 @@ async function createUpdateSchedule() {
 
         if (isToday) throw new Error("Schedule for today has already been created");
 
-        const todaysDate = getTodayDate().toLocaleDateString();
-        const tomorrowsDate = getTomorrowDate().toLocaleDateString();
+        const todaysDate = getTodayDate().toISOString();
+        const tomorrowsDate = getTomorrowDate().toISOString();
         const matchesToBePlayedToday = await Match.find({
             isMain: true,
             $and: [
@@ -185,11 +185,11 @@ function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, he
         const status = schedule.server.status;
         const historyIndex = schedule
             .updateHistory
-            .findIndex((history) => (new Date(history.date)).toLocaleDateString() === (new Date(Date.now())).toLocaleDateString());
+            .findIndex((history) => (new Date(history.date)).toLocaleDateString() === (new Date(schedule.server.lastUpdated)).toLocaleDateString());
 
         if(schedule.updateHistory[historyIndex]) {
             schedule.updateHistory[historyIndex] = {
-                date: schedule.updateHistory[historyIndex].date,
+                date: schedule.server.lastUpdated,
                 matchesAdded,
                 matchesDeleted,
                 totalMatches,
@@ -200,7 +200,7 @@ function setServerUpdateHistory({ matchesAdded, matchesDeleted, totalMatches, he
             }
         } else {
             const newHistory = { 
-                date: (new Date(Date.now())).toISOString(), 
+                date: schedule.server.lastUpdated, 
                 matchesAdded, 
                 matchesDeleted,
                 totalMatches,
