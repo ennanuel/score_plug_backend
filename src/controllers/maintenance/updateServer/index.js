@@ -47,10 +47,10 @@ async function runFunctionsToUpdateServer() {
 
         await createUpdateSchedule();
 
-        serverUpdateScheduleJSON("SUCCESS");
+        updateServerScheduleJSON("SUCCESS");
     } catch (error) {
         console.error(error);
-        serverUpdateScheduleJSON("FAILED");
+        updateServerScheduleJSON("FAILED");
     }
 }
 
