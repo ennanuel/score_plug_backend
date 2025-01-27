@@ -3,7 +3,7 @@ const { getTodayDate, getTomorrowDate, checkMatchScheduleDate } = require("../he
 const { reduceMatchToUpdateSchedule } = require("../helpers/reduce");
 const Match = require("../models/Match");
 const path = require("path");
-const { ONE_MINUTE_IN_MS, THIRTY_ONE_DAYS_IN_MS } = require("../constants");
+const { ONE_MINUTE_IN_MS, THIRTY_ONE_DAYS_IN_MS, ONE_DAY_IN_MS } = require("../constants");
 
 const schedulePath = path.join(__dirname, "../controllers/maintenance/schedule.json");
 
