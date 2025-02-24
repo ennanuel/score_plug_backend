@@ -133,7 +133,17 @@ const updateExpiredMatches = (matchIds) => {
 
 
 async function deleteRedundantMatches () {
-    const deletedMatches = await Match.deleteMany({ isPrevMatch: false, isHead2Head: false, isMain: false });
+    const deletedMatches = await Match.deleteMany({ 
+        $or: [
+            {
+                isPrevMatch: false, 
+                isHead2Head: false, 
+                isMain: false 
+            },
+            { homeTeam: null },
+            { awayTeam: null }
+        ]
+    });
     console.log('%d matches deleted', deletedMatches.deletedCount);
 }
 
