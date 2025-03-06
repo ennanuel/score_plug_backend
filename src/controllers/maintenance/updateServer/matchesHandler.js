@@ -6,6 +6,7 @@ const { prepareForBulkWrite, prepareMatchForUpload, refineH2HValues } = require(
 
 const { getDateFilters } = require("../../../helpers/getDate");
 const { refineMatchValues } = require("../../../helpers/mongoose");
+const Team = require('../../../models/Team');
 
 const matchesHandler = () => new Promise(
     async function (resolve, reject) {
@@ -34,13 +35,24 @@ const getMatchesToSave = () => new Promise(
             const savedMatches = await Match.find({ isMain: true }, '_id').lean();
             const savedMatchesIds = savedMatches.map(match => match._id);
             
-            const filteredMatches = matches.filter(match => !savedMatchesIds.includes(match.id));
+            const filteredMatches = await filterMatches(matches, savedMatchesIds);
             resolve(filteredMatches);
         } catch (error) {
             reject(error);
         }
     }
 );
+
+const filterMatches = async (matches, savedMatchesIds) => {
+    const teams = await Team.find({}, '_id').lean();
+    const teamIds = teams.map(({ _id }) => _id);
+
+    return matches.filter(match => (
+        !savedMatchesIds.inludes(match.id) && 
+        teamIds.includes(match.homeTeam.id) && 
+        teamIds.includes(match.awayTeam.id)
+    ));
+}
 
 const saveMainMatches = (matches) => new Promise(
     async function (resolve, reject) {
