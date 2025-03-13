@@ -48,7 +48,7 @@ const filterMatches = async (matches, savedMatchesIds) => {
     const teamIds = teams.map(({ _id }) => _id);
 
     return matches.filter(match => (
-        !savedMatchesIds.inludes(match.id) && 
+        !savedMatchesIds.includes(match.id) && 
         teamIds.includes(match.homeTeam.id) && 
         teamIds.includes(match.awayTeam.id)
     ));
