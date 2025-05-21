@@ -1,17 +1,23 @@
 {
-  "matches": {
-    "lastUpdated": "Sun, 26 Jan 2025 04:24:06 GMT",
-    "status": null,
-    "updateSchedule": [
+   "matches": {
+      "lastUpdated": "Wed, 21 May 2025 13:25:31 GMT",
+      "status": "SUCCESS",
+      "updateSchedule": []
+   },
+   "server": {
+      "lastUpdated": "Wed, 21 May 2025 12:39:41 GMT",
+      "status": "SUCCESS"
+   },
+   "updateHistory": [
       {
-        "start": "Sun, 26 Jan 2025 11:15:00 GMT",
-        "end": "Sun, 26 Jan 2025 22:48:00 GMT"
+         "date": "Wed, 21 May 2025 12:11:31 GMT",
+         "matchesAdded": 898,
+         "matchesDeleted": 896,
+         "totalMatches": 658,
+         "headToHeadsAdded": 155,
+         "headToHeadsDeleted": 119,
+         "totalHeadToHeads": 36,
+         "status": "PENDING"
       }
-    ]
-  },
-  "server": {
-    "lastUpdated": "Sun, 25 Jan 2025 04:24:06 GMT",
-    "status": "SUCCESS"
-  },
-  "updateHistory": []
+   ]
 }
