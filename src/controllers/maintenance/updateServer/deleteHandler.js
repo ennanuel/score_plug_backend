@@ -123,7 +123,7 @@ async function checkAndUpdateMainMatches() {
 const getExpiredMatches = () => Match.find({ 
     isMain: true,
     utcDate: { 
-        $lt: (new Date(getDateFrom())).toISOString()
+        $lt: getDateFrom().toISOString()
     }
 }, "_id head2head").lean();
 
