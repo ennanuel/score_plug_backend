@@ -25,13 +25,13 @@ const competitionHandler = () => new Promise(
 const getCompetitions = () => new Promise(
     async function (resolve, reject) {
         try {
-            let DBCompetitions = await Competition.find();
-            if (DBCompetitions.length <= 0) {
+            let dbCompetitions = await Competition.find().lean();
+            if (dbCompetitions.length <= 0) {
                 const { competitions } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/competitions`);
                 const preparedCompetitions = competitions.map(prepareCompetitionForUpload);
-                DBCompetitions = await Competition.insertMany(preparedCompetitions);
+                dbCompetitions = await Competition.insertMany(preparedCompetitions);
             };
-            resolve(DBCompetitions);
+            resolve(dbCompetitions);
         } catch (error) {
             reject(error);
         }
@@ -65,9 +65,9 @@ const prepareCompetitionForUpload = ({ currentSeason, ...competition }) => {
 }
 
 const filterCompWithUpToDateData = (competition) => {
-    const lastUpdatedCompetition = (new Date(competition._doc.updatedAt)).getTime();
+    const lastUpdatedCompetition = (new Date(competition.updatedAt)).getTime();
     const competitionDateIsOutdated = lastUpdatedCompetition < getYesterdayDate().getTime();
-    const noStandings = competition._doc.standings.length <= 0;
+    const noStandings = competition.standings.length <= 0;
     return competitionDateIsOutdated || noStandings;
 }
 
@@ -76,19 +76,19 @@ const prepareCompetitionForUpdate = (competitions) => new Promise(
         try {
             for (let competition of competitions) {
                 // If we get to fetch all the competitions with their currentSeason and lastUpdated, we can save 10 seconds
-                const { currentSeason, lastUpdated } = await getCompetitionData(competition._doc.code);
+                const { currentSeason, lastUpdated } = await getCompetitionData(competition.code);
                 
-                if (lastUpdated == competition._doc.lastUpdated) resolve(null);
+                if (lastUpdated == competition.lastUpdated) resolve(null);
 
-                const standings = await getCompetitionStandings(competition._doc._id);
+                const standings = await getCompetitionStandings(competition._id);
                 const competitionWinnerId = currentSeason.winner?.id;
                 const updateData = { standings, currentSeason: { ...currentSeason, winner: competitionWinnerId } };
-                const shouldUpdateTeams = competition._doc.startDate !== currentSeason.startDate || competition._doc.teams.length <= 0;
+                const shouldUpdateTeams = competition.startDate !== currentSeason.startDate || competition.teams.length <= 0;
 
-                if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._doc._id);
+                if (shouldUpdateTeams) updateData.teams = await updateCompetitionTeams(competition._id);
 
-                console.log('%s competition updated', competition._doc.name);
-                await Competition.findByIdAndUpdate(competition._doc._id, { $set: updateData });
+                console.log('%s competition updated', competition.name);
+                await Competition.findByIdAndUpdate(competition._id, { $set: updateData });
                 await delay(20000);
             }
             resolve();
