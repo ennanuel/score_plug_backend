@@ -75,7 +75,7 @@ const handleMatchesWithoutHead2Head = () => new Promise(
                 isMain: true,
                 homeTeam: { $ne: null },
                 awayTeam: { $ne: null }
-            });
+            }).lean();
             const h2hToUpdate = await prepareMatchHeadToHead(matchesWithoutH2H);
             await H2H.bulkWrite(h2hToUpdate);
             resolve();
@@ -89,38 +89,39 @@ const prepareMatchHeadToHead = (matches) => new Promise(
     async function (resolve, reject) {
         try {
             const head2heads = [];
-            for (let match of matches) {
+            console.log('Preparing to updated %d matches', matches.length);
+
+            for (let i = 0; i < matches.length; i++) {
                 let head2head = null;
                 let head2headId = null;
 
+                const match = matches[i];
                 const possibleH2HIds = [`${match.homeTeam} ${match.awayTeam}`, `${match.homeTeam} ${match.awayTeam}`];
                 const similarHead2Head = await H2H.findOne({ _id: { $in: possibleH2HIds } });
                 
                 if(similarHead2Head) {
-                    console.log("similar head-to-head exists");
+                    console.log(`Head-to-head already exists for match ${i + 1} - ${match._id}`);
                     head2head = prepareForBulkWrite({ ...similarHead2Head, matches: [match._id, ...similarHead2Head.matches] });
                     head2headId = similarHead2Head._id;
                 } else {
-                    console.log('preparing to update: %s', match._doc._id);
-                    const H2HDataURL = `${process.env.FOOTBALL_API_URL}/matches/${match._doc._id}/head2head?limit=10`;
+                    console.log(`Preparing to update head-to-head matches for match ${i + 1} of ${matches.length} - ${match._id}`);
+
+                    const H2HDataURL = `${process.env.FOOTBALL_API_URL}/matches/${match._id}/head2head?limit=10`;
                     const { resultSet, aggregates, matches } = await fetchHandler(H2HDataURL);
 
                     await delay();
 
                     const savedH2HMatches = await saveH2HMatches(matches);
-                    const headToHeadMatchIds = [match._doc._id, ...savedH2HMatches];
+                    const headToHeadMatchIds = [match._id, ...savedH2HMatches];
 
-                    const id = `${match._doc.homeTeam} ${match._doc.awayTeam}`;
+                    const id = `${match.homeTeam} ${match.awayTeam}`;
                     const h2hToSave = refineH2HValues({ id, resultSet, aggregates, matches: headToHeadMatchIds });
                     head2head = prepareForBulkWrite(h2hToSave);
                     head2headId = id;
                 }
-                    
-                match.head2head = head2headId;
-                match.isHead2Head = true;
 
-                await match.save();
-                console.log('match updated: %s', match._doc._id);
+                await Match.findByIdAndUpdate(match._id, { $set: { head2head: head2headId, isHead2Head: true } });
+                console.log(`Match ${i + 1} of ${matches.length} updated - ${match._id}`);
                     
                 head2heads.push(head2head);
             }
