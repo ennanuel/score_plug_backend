@@ -61,7 +61,7 @@ const getCompetitionMatches = ({ name, _id, currentSeason, type }) => new Promis
                 await Match.updateMany({ 
                     isMain: true, 
                     status: "FINISHED", 
-                    utcDate: { $lt: getTodayDate().toLocaleDateString() } 
+                    utcDate: { $lt: getTodayDate().toISOString() } 
                 }, { $set: { isPrevMatch: true }});
             }
             resolve(result);
