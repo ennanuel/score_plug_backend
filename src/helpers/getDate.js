@@ -4,14 +4,14 @@ const getYesterdayDate = () => new Date((new Date()).getTime() - ONE_DAY_IN_MS);
 const getTodayDate = () => (new Date(Date.now()));
 const getTomorrowDate = (date = (new Date())) => new Date(date.getTime() + ONE_DAY_IN_MS);
 
-const getDateFrom = () => (new Date((new Date()).getTime() - THREE_DAYS_IN_MS)).toLocaleDateString();
-const getDateTo = () => (new Date((new Date()).getTime() + THREE_DAYS_IN_MS)).toLocaleDateString();
+const getDateFrom = () => (new Date((new Date()).getTime() - THREE_DAYS_IN_MS));
+const getDateTo = () => (new Date((new Date()).getTime() + THREE_DAYS_IN_MS));
 
 function getDateFilters() {
-    const [fromMonth, fromDay, fromYear] = getDateFrom().split('/');
-    const [toMonth, toDay, toYear] = getDateTo().split('/');
-    const dateFrom = `${fromYear}-${convertToTimeNumber(fromMonth)}-${convertToTimeNumber(fromDay)}`;
-    const dateTo = `${toYear}-${convertToTimeNumber(toMonth)}-${convertToTimeNumber(toDay)}`;
+    const fromDate = getDateFrom();
+    const toDate = getDateTo();
+    const dateFrom = `${fromDate.getFullYear()}-${convertToTimeNumber(fromDate.getMonth() + 1)}-${convertToTimeNumber(fromDate.getDate())}`;
+    const dateTo = `${toDate.getFullYear()}-${convertToTimeNumber(toDate.getMonth() + 1)}-${convertToTimeNumber(toDate.getDate())}`;
     return { dateFrom, dateTo };
 };
 
@@ -24,7 +24,7 @@ function getFromToDates(from, to) {
     return { startDate: fromDate.toDateString(), endDate: toDate.toDateString() };
 };
 
-const convertToTimeNumber = (time) => Number(time) < 10 ? '0' + time : time;
+const convertToTimeNumber = (time) => `0${time}`.substring(String(time).length - 1, String(time).length + 1);
 
 const checkMatchScheduleDate = (scheduleDate) => (new Date(scheduleDate)).toDateString() === (new Date()).toDateString();
 
