@@ -107,11 +107,11 @@ const prepareMatchHeadToHead = (matches) => new Promise(
                     console.log(`Preparing to update head-to-head matches for match ${i + 1} of ${matches.length} - ${match._id}`);
 
                     const H2HDataURL = `${process.env.FOOTBALL_API_URL}/matches/${match._id}/head2head?limit=10`;
-                    const { resultSet, aggregates, matches } = await fetchHandler(H2HDataURL);
+                    const { resultSet, aggregates, matches: h2hMatches } = await fetchHandler(H2HDataURL);
 
                     await delay();
 
-                    const savedH2HMatches = await saveH2HMatches(matches);
+                    const savedH2HMatches = await saveH2HMatches(h2hMatches);
                     const headToHeadMatchIds = [match._id, ...savedH2HMatches];
 
                     const id = `${match.homeTeam} ${match.awayTeam}`;
