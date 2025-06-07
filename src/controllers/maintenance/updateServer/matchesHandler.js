@@ -89,9 +89,10 @@ const prepareMatchHeadToHead = (matches) => new Promise(
     async function (resolve, reject) {
         try {
             const head2heads = [];
-            console.log('Preparing to updated %d matches', matches.length);
+            const matchesSize = matches.length;
+            console.log('Preparing to updated %d matches', matchesSize);
 
-            for (let i = 0; i < matches.length; i++) {
+            for (let i = 0; i < matchesSize; i++) {
                 let head2head = null;
                 let head2headId = null;
 
@@ -104,7 +105,7 @@ const prepareMatchHeadToHead = (matches) => new Promise(
                     head2head = prepareForBulkWrite({ ...similarHead2Head, matches: [match._id, ...similarHead2Head.matches] });
                     head2headId = similarHead2Head._id;
                 } else {
-                    console.log(`Preparing to update head-to-head matches for match ${i + 1} of ${matches.length} - ${match._id}`);
+                    console.log(`Preparing to update head-to-head matches for match ${i + 1} of ${matchesSize} - ${match._id}`);
 
                     const H2HDataURL = `${process.env.FOOTBALL_API_URL}/matches/${match._id}/head2head?limit=10`;
                     const { resultSet, aggregates, matches: h2hMatches } = await fetchHandler(H2HDataURL);
@@ -121,7 +122,7 @@ const prepareMatchHeadToHead = (matches) => new Promise(
                 }
 
                 await Match.findByIdAndUpdate(match._id, { $set: { head2head: head2headId, isHead2Head: true } });
-                console.log(`Match ${i + 1} of ${matches.length} updated - ${match._id}`);
+                console.log(`Match ${i + 1} of ${matchesSize} updated - ${match._id}`);
                     
                 head2heads.push(head2head);
             }
