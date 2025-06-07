@@ -9,81 +9,6 @@ const { getFromToDates } = require("../../helpers/getDate");
 
 const { io } = require("../../../app");
 
-// const MOCK_MATCHES = [
-//         {
-//             "area": {
-//                 "id": 2072,
-//                 "name": "England",
-//                 "code": "ENG",
-//                 "flag": "https://crests.football-data.org/770.svg"
-//             },
-//             "competition": {
-//                 "id": 2021,
-//                 "name": "Premier League",
-//                 "code": "PL",
-//                 "type": "LEAGUE",
-//                 "emblem": "https://crests.football-data.org/PL.png"
-//             },
-//             "season": {
-//                 "id": 2287,
-//                 "startDate": "2024-08-16",
-//                 "endDate": "2025-05-25",
-//                 "currentMatchday": 37,
-//                 "winner": null
-//             },
-//             "id": 497773,
-//             "utcDate": "2025-05-19T19:00:00Z",
-//             "status": "Happy Birthday!",
-//             "matchday": 37,
-//             "stage": "REGULAR_SEASON",
-//             "group": null,
-//             "lastUpdated": "2025-05-21T00:20:47Z",
-//             "homeTeam": {
-//                 "id": 397,
-//                 "name": "Brighton & Hove Albion FC",
-//                 "shortName": "Brighton Hove",
-//                 "tla": "BHA",
-//                 "crest": "https://crests.football-data.org/397.png"
-//             },
-//             "awayTeam": {
-//                 "id": 64,
-//                 "name": "Liverpool FC",
-//                 "shortName": "Liverpool",
-//                 "tla": "LIV",
-//                 "crest": "https://crests.football-data.org/64.png"
-//             },
-//             "score": {
-//                 "winner": "HOME_TEAM",
-//                 "duration": "REGULAR",
-//                 "fullTime": {
-//                     "home": 3,
-//                     "away": 2
-//                 },
-//                 "halfTime": {
-//                     "home": 0,
-//                     "away": 0
-//                 }
-//             },
-//             "odds": {
-//                 "msg": "Activate Odds-Package in User-Panel to retrieve odds."
-//             },
-//             "referees": [
-//                 {
-//                     "id": 11327,
-//                     "name": "John Brooks",
-//                     "type": "REFEREE",
-//                     "nationality": "England"
-//                 },
-//                 {
-//                     "id": 11423,
-//                     "name": "Andy Madley",
-//                     "type": "REFEREE",
-//                     "nationality": "England"
-//                 }
-//             ]
-//         }
-//     ];
-
 async function executeMatchUpdate() {
     let status;
     let updatedMatchIds = [];
@@ -93,9 +18,7 @@ async function executeMatchUpdate() {
         const serverIsUpdating = checkIfServerIsUpdating();
         if (serverIsUpdating) throw new Error("Daily Server Update is running");
 
-        const { matches } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/matches?dateFrom=2025-05-19&dateTo=2025-05-20`);
-        // const matches = MOCK_MATCHES;
-        console.log(matches);
+        const { matches } = await fetchHandler(`${process.env.FOOTBALL_API_URL}/matches`);
 
         const matchIds = matches.map(match => match.id);
         const matchesObjectWithIdAsKey = matches.reduce(reduceToObjectWithIdAsKeys, {});
